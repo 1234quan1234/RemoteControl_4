@@ -45,3 +45,4 @@ Project1/[Rr]elease/
 Project1/x64/
 Project1/build/.vs/
 *.ipch
+Project1/Resources/ClientSecrets.json

@@ -16,9 +16,8 @@ private:
     void refreshToken();
 
 public:
-    GmailAPI(const std::string& client_id, const std::string& client_secret,
-        const std::string& redirect_uri);
-    ~GmailAPI();
+    GmailAPI(const std::string& client_id="", const std::string& client_secret="", const std::string& redirect_uri="");
+    ~GmailAPI();  
     static Json::Value ReadClientSecrets(const std::string& path);
     std::string getAuthorizationUrl() const;
     void authenticate(const std::string& authCode);

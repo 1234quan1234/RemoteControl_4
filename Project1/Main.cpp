@@ -6,13 +6,18 @@ int main() {
         cout << "=== Gmail Remote Control System ===\n";
 
         // Initialize API and check/refresh token
-        cout << "\nInitializing Gmail API..." << endl;
-        auto secrets = GmailAPI::ReadClientSecrets("C:\\Users\\GIGABYTE\\Downloads\\Client3.json");
+        cout << "\nInitializing Gmail API...\n";
+
+		cout << "Loading client secrets...\n";
+        auto secrets = GmailAPI::ReadClientSecrets("\\Resources\\ClientSecrets.json");
+		cout << "Client secrets loaded.\n";
         GmailAPI api(
             secrets["installed"]["client_id"].asString(),
             secrets["installed"]["client_secret"].asString(),
             secrets["installed"]["redirect_uris"][0].asString()
         );
+
+        cout << "Gmail API initialized.\n";
 
         // Check and handle token at startup
         try {
@@ -79,8 +84,10 @@ int main() {
 
         return 0;
     }
-    catch (const exception& e) {
-        cerr << "\nFatal error: " << e.what() << endl;
-        return 1;
+    catch (const std::exception& e) {
+        cout << "Exception: " << e.what() << endl;
+    }
+    catch (...) {
+        cout << "Unknown exception occurred.\n";
     }
 }

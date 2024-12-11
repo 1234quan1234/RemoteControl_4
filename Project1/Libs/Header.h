@@ -29,7 +29,6 @@ using namespace std;
 
 #include <winsock2.h>
 #include <windows.h>
-#include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 
@@ -43,7 +42,6 @@ using namespace std;
 #include <openssl/evp.h>
 #include <openssl/buffer.h>
 
-#include <windows.h>
 #include <eh.h>
 
 #include <gdiplus.h>
@@ -67,12 +65,9 @@ using namespace std;
 
 #include <ctime>
 
-#include <filesystem>
-
 #include <dshow.h>
 #include <atlbase.h>
 #include <atlconv.h>
-#include <gdiplus.h>
 #include <strmif.h>
 
 #include <mferror.h>  
