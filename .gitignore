@@ -1,0 +1,47 @@
+# Build folders
+[Dd]ebug/
+[Rr]elease/
+x64/
+build/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.ipch
+
+# Build results
+*.ilk
+*.meta
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*.log
+*.vspscc
+*.vssscc
+*.exe
+*.pidb
+*.svclog
+*.scc
+
+# Project specific
+Project1/[Dd]ebug/
+Project1/[Rr]elease/
+Project1/x64/
+Project1/build/.vs/
+*.ipch

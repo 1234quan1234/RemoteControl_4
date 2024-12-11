@@ -1,0 +1,159 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="Header Files\RemoteControl">
+      <UniqueIdentifier>{68af1b87-5a8a-45e9-866f-6b81206e6bb0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Interface">
+      <UniqueIdentifier>{6b971c48-f288-4a25-b1cb-36ca6ca1f3dd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Interface">
+      <UniqueIdentifier>{cc1ee17d-01f2-4a2e-bd1e-2200777c57e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\RemoteControl">
+      <UniqueIdentifier>{d0c50db9-51a0-4ec2-af0b-544045b40644}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Server">
+      <UniqueIdentifier>{f1c2e80d-c029-4af9-a7ae-bcbc6cede35e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Server">
+      <UniqueIdentifier>{cfcbaa31-baf9-4fa9-8b70-199cec226906}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Main">
+      <UniqueIdentifier>{e48550c7-0e3c-4a89-9593-e55688fe5a39}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Libs">
+      <UniqueIdentifier>{a50820f9-a322-4c23-95e7-9f0e9995346e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Client">
+      <UniqueIdentifier>{ebdb4add-4132-4912-b7b0-d0e1090c3a54}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Client">
+      <UniqueIdentifier>{9007782a-bc06-4aea-9d07-da24c5fbda3e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Functions">
+      <UniqueIdentifier>{b048eb86-69ff-484b-9946-e4c7beae5a7a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Functions">
+      <UniqueIdentifier>{0aca2af1-78f3-4710-b4d5-18f3d8a4f8ad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\GmailAPI">
+      <UniqueIdentifier>{16941244-1c80-45a4-ad11-5ad60a24931f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\GmailAPI">
+      <UniqueIdentifier>{c5a891d8-277f-42a8-a7ec-ee721db45370}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>Source Files\Main</Filter>
+    </ClCompile>
+    <ClCompile Include="Client\HttpClient.cpp">
+      <Filter>Source Files\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="Client\Client_Gmail.cpp">
+      <Filter>Source Files\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\ScreenshotHandler.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\WebcamCapture.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\EmailFetcher.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\KeyboardTracker.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\RunningApps.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="GmailAPI\TokenManager.cpp">
+      <Filter>Source Files\GmailAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="GmailAPI\GmailAPI.cpp">
+      <Filter>Source Files\GmailAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="GmailAPI\CurlWrapper.cpp">
+      <Filter>Source Files\GmailAPI</Filter>
+    </ClCompile>
+    <ClCompile Include="Interface\MenuSystem.cpp">
+      <Filter>Source Files\Interface</Filter>
+    </ClCompile>
+    <ClCompile Include="RemoteControl\SystemInfo.cpp">
+      <Filter>Source Files\RemoteControl</Filter>
+    </ClCompile>
+    <ClCompile Include="Server\ServerManager.cpp">
+      <Filter>Source Files\Server</Filter>
+    </ClCompile>
+    <ClCompile Include="Server\EmailMonitor.cpp">
+      <Filter>Source Files\Server</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Client\Client_Gmail.h">
+      <Filter>Header Files\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Client\HttpClient.h">
+      <Filter>Header Files\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\KeyboardTracker.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\RunningApps.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\ScreenshotHandler.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\WebcamCapture.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="GmailAPI\TokenInfo.h">
+      <Filter>Header Files\GmailAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="GmailAPI\TokenManager.h">
+      <Filter>Header Files\GmailAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="GmailAPI\CurlWrapper.h">
+      <Filter>Header Files\GmailAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="GmailAPI\GmailAPI.h">
+      <Filter>Header Files\GmailAPI</Filter>
+    </ClInclude>
+    <ClInclude Include="Interface\MenuSystem.h">
+      <Filter>Header Files\Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Libs\Header.h">
+      <Filter>Header Files\Libs</Filter>
+    </ClInclude>
+    <ClInclude Include="RemoteControl\SystemInfo.h">
+      <Filter>Header Files\RemoteControl</Filter>
+    </ClInclude>
+    <ClInclude Include="Server\EmailMonitor.h">
+      <Filter>Header Files\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Server\ServerManager.h">
+      <Filter>Header Files\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Server\Config.h">
+      <Filter>Header Files\Server</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\EmailFetcher.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
