@@ -49,4 +49,9 @@ public:
 	void handleListFile(const Json::Value& command);
 
     void handlePowerCommand(const Json::Value& command);
+    void handleScreenshotCommand(const Json::Value& command);
+	void handleSystemInfoCommand(const Json::Value& command);
+    void handleShutdownCommand(const Json::Value& command);
+	string getServerName();
+	string currentCommand;
 };

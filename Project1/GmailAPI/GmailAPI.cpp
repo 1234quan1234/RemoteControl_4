@@ -13,6 +13,10 @@ GmailAPI::~GmailAPI() {
     delete tokenManager;
 };
 
+string GmailAPI::getServerName() {
+	return emailFetcher.getMyEmail();
+}
+
 Json::Value GmailAPI::ReadClientSecrets(const string& path) {
 
     // Mother folder directory

@@ -25,6 +25,9 @@ ServerManager::ServerManager(GmailAPI& api)
     config.logFile = "server.log";
 }
 
+string ServerManager::getServerName() {
+	return gmail.getServerName();
+}
 
 void ServerManager::start() {
     running = true;
@@ -42,7 +45,10 @@ void ServerManager::stop() {
 
 void ServerManager::processCommands() {
     if (monitor.checkForCommands()) {
-        logActivity("Processing commands");
+        //logActivity("Processing commands");
+    }
+    else {
+	    this->currentCommand = "";
     }
 }
 
@@ -132,18 +138,18 @@ void ServerManager::handleCommand(const Json::Value& command) {
             handleProcessListCommand(command);
             return; 
         }
-        else if (commandStr == "readRecentEmails") {
+        else if (this->currentCommand == "readRecentEmails") {
             handleReadRecentEmailsCommand(command);
             return;
         }
-        else if (commandStr == "captureScreen") {
+        else if (this->currentCommand == "captureScreen") {
             handleCaptureScreen(command);
             return;
         }
         else if (commandStr == "recordScreen") {
             return;
         }
-        else if (commandStr == "captureWebcam") {
+        else if (this->currentCommand == "captureWebcam") {
             handleCaptureWebcam(command);
             return;
         }
@@ -255,8 +261,8 @@ void ServerManager::handleProcessListCommand(const Json::Value& command) {
         file << endl;
     }
     file.close();
-    string subject = "Hello!";
-    string body = "Email Content!";
+    string subject = "Process List";
+    string body = "";
 
     if (gmail.sendEmail(senderEmail, subject, body, filename)) {
         cout << "Process list sent successfully via email" << endl;
@@ -287,8 +293,8 @@ void ServerManager::handleReadRecentEmailsCommand(const Json::Value& command) {
     }
     file.close();
 
-    string subject = "Hello!";
-    string body = "Email Content!";
+    string subject = "Recent emails";
+    string body = "";
 
     if (gmail.sendEmail(senderEmail, subject, body, filename)) {
         cout << "Recent received emails sent successfully via email" << endl;
@@ -306,21 +312,20 @@ void ServerManager::handleCaptureWebcam(const Json::Value& command) {
     string senderEmail = command["From"].asString();
     cout << "Sender email: " << senderEmail << endl;
 
-    // Tạo đường dẫn file dựa trên thời gian hiện tại
-    string filename = "D:\\webcam_capture_" + to_string(time(nullptr)) + ".jpg";
+   string path = "D:\\webcam_capture_" + to_string(time(nullptr)) + ".jpg";
 
     // Gọi hàm captureImage
-    if (webcamCapture.captureImage(filename.c_str())) {
-        cout << "Chụp ảnh từ webcam thành công!" << endl;
+    if (webcamCapture.captureImage(path.c_str())) {
+        cout << "Screenshot captured successfully. Saved in: " << path << endl;
     }
     else {
-        cout << "Chụp ảnh từ webcam thất bại!" << endl;
+		cout << "Screenshot capture failed" << endl;
     }
 
-    string subject = "Hello!";
-    string body = "Email Content!";
+	string subject = "Webcam Capture";
+    string body = "";
 
-    if (gmail.sendEmail(senderEmail, subject, body, filename)) {
+    if (gmail.sendEmail(senderEmail, subject, body, path)) {
         cout << "Webcam capture sent successfully via email" << endl;
     }
     else {
@@ -385,8 +390,8 @@ void ServerManager::handleCaptureScreen(const Json::Value& command) {
 		std::cout << "Failed to capture screenshot" << std::endl;
 	}
 
-    string subject = "Hello!";
-    string body = "Email Content!";
+    string subject = "Screen Capture";
+    string body = "";
 
     if (gmail.sendEmail(senderEmail, subject, body, filename)) {
         cout << "Screen capture sent successfully via email" << endl;
