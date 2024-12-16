@@ -7,7 +7,6 @@ int main() {
 
         // Initialize API and check/refresh token
         cout << "\nInitializing Gmail API...\n";
-
 		cout << "Loading client secrets...\n";
         auto secrets = GmailAPI::ReadClientSecrets("\\Resources\\ClientSecrets.json");
 		cout << "Client secrets loaded.\n";
@@ -16,7 +15,6 @@ int main() {
             secrets["installed"]["client_secret"].asString(),
             secrets["installed"]["redirect_uris"][0].asString()
         );
-
         cout << "Gmail API initialized.\n";
 
         // Check and handle token at startup
