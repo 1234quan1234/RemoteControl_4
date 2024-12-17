@@ -22,7 +22,6 @@ private:
     void saveAccessList() const;
     void loadAccessList();
 	bool isEmailApproved(const string& email);
-	void handleAccessRequest(const Json::Value& command);
 
     void logActivity(const string& activity);
 
@@ -34,11 +33,20 @@ public:
     void processCommands();
     void handleCommand(const Json::Value& command); // Move to public
     void handleProcessListCommand(const Json::Value& command);
+
 	void handleReadRecentEmailsCommand(const Json::Value& command);
+
 	void handleCaptureScreen(const Json::Value& command);
+    void handleRecordScreen(const Json::Value& command);
+
     void handleCaptureWebcam(const Json::Value& command);
+	void handleRecordWebcam(const Json::Value& command);
+
 	void handleTrackKeyboard(const Json::Value& command);
-    void handleScreenshotCommand(const Json::Value& command);
-	void handleSystemInfoCommand(const Json::Value& command);
-    void handleShutdownCommand(const Json::Value& command);
+
+	void handleListService(const Json::Value& command);
+
+	void handleListFile(const Json::Value& command);
+
+    void handlePowerCommand(const Json::Value& command);
 };

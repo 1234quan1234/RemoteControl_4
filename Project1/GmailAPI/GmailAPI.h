@@ -27,4 +27,5 @@ public:
     bool hasValidToken() const;
     void loadSavedTokens();
     bool sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath);
+	bool sendSimpleEmail(const string& to, const string& subject, const string& body);
 };

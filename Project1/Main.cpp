@@ -1,6 +1,5 @@
 ﻿#include "Server/ServerManager.h"
 #include "RemoteControl/SystemInfo.h"
-#include "Client/Client_Gmail.h"
 
 int main() {
     try {
@@ -39,12 +38,6 @@ int main() {
             api.authenticate(authCode);
             cout << "Authentication successful!\n" << endl;
         }
-
-        Client_Gmail client(
-            secrets["installed"]["client_id"].asString(),
-            secrets["installed"]["client_secret"].asString(),
-            secrets["installed"]["redirect_uris"][0].asString()
-        );
 
         /*try {
             

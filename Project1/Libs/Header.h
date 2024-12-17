@@ -13,6 +13,7 @@
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
 #pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "PowrProf.lib")  
 
 #define CURL_STATICLIB
 #define _CRTDBG_MAP_ALLOC
@@ -81,3 +82,14 @@ using namespace std;
 #include <shlwapi.h>
 
 #include <filesystem>
+
+#include <winsvc.h>
+
+#include <shlobj.h>
+#include <system_error>
+
+#include <iomanip>
+
+#include <powrprof.h> 
+
+#include <Guiddef.h>

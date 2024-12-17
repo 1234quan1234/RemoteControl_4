@@ -63,9 +63,6 @@
     <ClCompile Include="Client\HttpClient.cpp">
       <Filter>Source Files\Client</Filter>
     </ClCompile>
-    <ClCompile Include="Client\Client_Gmail.cpp">
-      <Filter>Source Files\Client</Filter>
-    </ClCompile>
     <ClCompile Include="Functions\ScreenshotHandler.cpp">
       <Filter>Source Files\Functions</Filter>
     </ClCompile>
@@ -102,11 +99,17 @@
     <ClCompile Include="Server\EmailMonitor.cpp">
       <Filter>Source Files\Server</Filter>
     </ClCompile>
+    <ClCompile Include="Functions\ServiceList.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\FileList.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
+    <ClCompile Include="Functions\Power.cpp">
+      <Filter>Source Files\Functions</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client\Client_Gmail.h">
-      <Filter>Header Files\Client</Filter>
-    </ClInclude>
     <ClInclude Include="Client\HttpClient.h">
       <Filter>Header Files\Client</Filter>
     </ClInclude>
@@ -153,6 +156,15 @@
       <Filter>Header Files\Server</Filter>
     </ClInclude>
     <ClInclude Include="Functions\EmailFetcher.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\ServiceList.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\FileList.h">
+      <Filter>Header Files\Functions</Filter>
+    </ClInclude>
+    <ClInclude Include="Functions\Power.h">
       <Filter>Header Files\Functions</Filter>
     </ClInclude>
   </ItemGroup>

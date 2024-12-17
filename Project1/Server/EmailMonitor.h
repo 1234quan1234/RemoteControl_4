@@ -9,7 +9,7 @@ class EmailMonitor {
 private:
     GmailAPI& gmail;
     ServerConfig& config;
-    ServerManager& server;  // Changed from serverManager to server
+    ServerManager& server; 
 
 public:
     EmailMonitor(GmailAPI& api, ServerConfig& cfg, ServerManager& srv);

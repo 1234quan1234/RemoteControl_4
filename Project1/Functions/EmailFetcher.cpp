@@ -2,7 +2,7 @@
 #include "..\Functions\EmailFetcher.h"
 
 EmailFetcher::EmailFetcher(CurlWrapper& curl, TokenManager& tokenManager)
-    : curl(curl), tokenManager(tokenManager), serverStartTime(time(nullptr)), lastFetchedTime(time(nullptr))
+    : curl(curl), tokenManager(tokenManager), serverStartTime(time(nullptr)), lastFetchedTime(time(nullptr)), lastCheckTime(time(nullptr))
 {
     static bool isFirstCall = true;
     if (isFirstCall) {
@@ -11,6 +11,29 @@ EmailFetcher::EmailFetcher(CurlWrapper& curl, TokenManager& tokenManager)
         cout << "Server started at: " << timeStr;
         isFirstCall = false;
     }
+}
+
+string EmailFetcher::getMyEmail() {
+    if (!tokenManager.hasValidToken()) {
+        tokenManager.refreshToken();
+    }
+
+    vector<string> headers = {
+        "Authorization: Bearer " + tokenManager.getCurrentToken().access_token
+    };
+
+    string response = curl.performRequestWithRetry(
+        "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+        "GET",
+        "",
+        headers
+    );
+
+    Json::Value profile;
+    Json::Reader reader;
+    reader.parse(response, profile);
+
+    return profile["emailAddress"].asString();
 }
 
 bool EmailFetcher::readAttachmentFile(const string& path, string& content) {
@@ -57,58 +80,103 @@ string EmailFetcher::base64EncodeContent(const string& content) {
     return encoded;
 }
 
-string EmailFetcher::createEmailContent(const string& to, const string& subject, const string& body,
-    const string& attachmentPath, const string& encodedAttachment) {
-    return "From: qyanbyi23@gmail.com\r\n"
+string EmailFetcher::createEmailContent(const string& to, const string& subject, const string& body, const string& attachmentPath, const string& encodedAttachment)
+{
+    string senderEmail = getMyEmail();
+    return
+        "From:" + senderEmail + "\r\n"
         "To: " + to + "\r\n"
         "Subject: " + subject + "\r\n"
-        "Content-Type: multipart/mixed; boundary=boundary\r\n\r\n"
+        "Content-Type: multipart/mixed; boundary=boundary\r\n"
+        "\r\n"
         "--boundary\r\n"
-        "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
-        + body + "\r\n\r\n"
+        "Content-Type: text/plain; charset=UTF-8\r\n"
+        "\r\n"
+        + body + "\r\n"
+        "\r\n"
         "--boundary\r\n"
         "Content-Type: application/octet-stream; name=\"" + attachmentPath + "\"\r\n"
-        "Content-Transfer-Encoding: base64\r\n\r\n"
-        + encodedAttachment + "\r\n\r\n"
+        "Content-Transfer-Encoding: base64\r\n"
+        "\r\n"
+        + encodedAttachment + "\r\n"
+        "\r\n"
         "--boundary--\r\n";
 }
 
-bool EmailFetcher::sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath) {
-    cout << "\n=== Starting email send process ===\n";
+string EmailFetcher::createSimpleEmailContent(const string& to, const string& subject, const string& body) {
+    string senderEmail = getMyEmail();
+    return
+        "From: " + senderEmail + "\r\n"
+        "To: " + to + "\r\n"
+        "Subject: " + subject + "\r\n"
+        "Content-Type: multipart/alternative; boundary=boundary\r\n"
+        "\r\n"
+        "--boundary\r\n"
+        "Content-Type: text/plain; charset=UTF-8\r\n"
+        "\r\n"
+        + body + "\r\n"
+        "\r\n"
+        "--boundary--\r\n";
+}
 
+string EmailFetcher::createEmailContentMultipleAttachments(
+    const string& to,
+    const string& subject,
+    const string& body,
+    const vector<pair<string, string>>& attachments) {
+
+    string senderEmail = getMyEmail();
+    string content =
+        "From:" + senderEmail + "\r\n"
+        "To: " + to + "\r\n"
+        "Subject: " + subject + "\r\n"
+        "Content-Type: multipart/mixed; boundary=boundary\r\n"
+        "\r\n"
+        "--boundary\r\n"
+        "Content-Type: text/plain; charset=UTF-8\r\n"
+        "\r\n"
+        + body + "\r\n"
+        "\r\n";
+
+    for (const auto& attachment : attachments) {
+        const string& attachPath = attachment.first;
+        const string& attachContent = attachment.second;
+
+        content +=
+            "--boundary\r\n"
+            "Content-Type: application/octet-stream; name=\"" + attachPath + "\"\r\n"
+            "Content-Transfer-Encoding: base64\r\n"
+            "\r\n"
+            + attachContent + "\r\n"
+            "\r\n";
+    }
+
+    content += "--boundary--\r\n";
+    return content;
+}
+
+bool EmailFetcher::sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath) {
     // 1. Token validation
-    cout << "Current token status: " << (tokenManager.hasValidToken() ? "Valid" : "Invalid") << endl;
     if (!tokenManager.hasValidToken()) {
         tokenManager.refreshToken();
     }
 
     // 2. Read attachment file
-    cout << "\nReading attachment: " << attachmentPath << endl;
     string attachmentContent;
     if (!readAttachmentFile(attachmentPath, attachmentContent)) {
-        cout << "Failed to read attachment file\n";
         return false;
     }
-    cout << "Attachment size: " << attachmentContent.length() << " bytes\n";
 
     // 3. Encode attachment
-    cout << "\nEncoding attachment to base64...\n";
     string encodedAttachment = base64EncodeContent(attachmentContent);
-    cout << "Encoded attachment size: " << encodedAttachment.length() << " bytes\n";
 
     // 4. Create email content
-    cout << "\nCreating email content...\n";
-    cout << "To: " << to << "\nSubject: " << subject << endl;
     string emailContent = createEmailContent(to, subject, body, attachmentPath, encodedAttachment);
-    cout << "Email content size: " << emailContent.length() << " bytes\n";
 
     // 5. Encode email
-    cout << "\nEncoding email to base64...\n";
     string encodedEmail = base64EncodeContent(emailContent);
-    cout << "Encoded email size: " << encodedEmail.length() << " bytes\n";
 
     // 6. Create request body
-    cout << "\nPreparing request...\n";
     Json::Value requestBody;
     requestBody["raw"] = encodedEmail;
 
@@ -116,14 +184,50 @@ bool EmailFetcher::sendEmail(const string& to, const string& subject, const stri
     vector<string> headers = {
         "Authorization: Bearer " + tokenManager.getCurrentToken().access_token,
         "Content-Type: application/json",
-        "Accept: application/json"  // Add Accept header
+        "Accept: application/json"
     };
 
-    cout << "Request headers:\n";
-    for (const auto& header : headers) {
-        cout << "  " << header.substr(0, header.find(':')) << ": [REDACTED]\n";
+    string response = curl.performRequestWithRetry(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        "POST",
+        requestBody.toStyledString(),
+        headers
+    );
+
+    return !response.empty();
+}
+
+bool EmailFetcher::sendSimpleEmail(const string& to, const string& subject, const string& body) {
+    cout << "\n=== Starting simple email send process ===\n";
+
+    // 1. Token validation
+    cout << "Current token status: " << (tokenManager.hasValidToken() ? "Valid" : "Invalid") << endl;
+    if (!tokenManager.hasValidToken()) {
+        tokenManager.refreshToken();
     }
-    cout << "Request body size: " << requestBody.toStyledString().length() << " bytes\n";
+
+    // 2. Create email content
+    cout << "\nCreating email content...\n";
+    cout << "To: " << to << "\nSubject: " << subject << endl;
+    string emailContent = createSimpleEmailContent(to, subject, body);
+    cout << "Email content size: " << emailContent.length() << " bytes\n";
+
+    // 3. Encode email
+    cout << "\nEncoding email to base64...\n";
+    string encodedEmail = base64EncodeContent(emailContent);
+    cout << "Encoded email size: " << encodedEmail.length() << " bytes\n";
+
+    // 4. Create request body
+    cout << "\nPreparing request...\n";
+    Json::Value requestBody;
+    requestBody["raw"] = encodedEmail;
+
+    // 5. Send request
+    vector<string> headers = {
+        "Authorization: Bearer " + tokenManager.getCurrentToken().access_token,
+        "Content-Type: application/json",
+        "Accept: application/json"
+    };
 
     cout << "\nSending request to Gmail API...\n";
     string response = curl.performRequestWithRetry(
@@ -141,30 +245,14 @@ bool EmailFetcher::sendEmail(const string& to, const string& subject, const stri
     return !response.empty();
 }
 
-string EmailFetcher::getMyEmail() {
-    if (!tokenManager.hasValidToken()) {
-        tokenManager.refreshToken();
-    }
-
-    vector<string> headers = {
-        "Authorization: Bearer " + tokenManager.getCurrentToken().access_token
-    };
-
-    string response = curl.performRequestWithRetry(
-        "https://gmail.googleapis.com/gmail/v1/users/me/profile",
-        "GET",
-        "",
-        headers
-    );
-
-    Json::Value profile;
-    Json::CharReaderBuilder reader;
-    istringstream(response) >> profile;
-
-    return profile["emailAddress"].asString();
-}
-
 vector<string> EmailFetcher::getEmailNow() {
+    time_t currentTime = time(nullptr);
+
+    if (difftime(currentTime, lastCheckTime) < CHECK_INTERVAL) {
+        return vector<string>();  // Too soon to check
+    }
+    lastCheckTime = currentTime;
+
     if (!tokenManager.hasValidToken()) {
         tokenManager.refreshToken();
     }
@@ -176,7 +264,6 @@ vector<string> EmailFetcher::getEmailNow() {
     string query = "https://www.googleapis.com/gmail/v1/users/me/messages?q=subject:Command::+after:"
         + to_string(lastFetchedTime)
         + "&format=full";
-
     string response = curl.performRequestWithRetry(query, "GET", "", headers);
 
     vector<string> emails;
@@ -192,16 +279,16 @@ vector<string> EmailFetcher::getEmailNow() {
             return vector<string>();
         }
 
-        // Kiểm tra xem dữ liệu JSON có chứa mảng messages hay không
+        
         if (jsonData.isMember("messages")) {
-            // Lấy dữ liệu
+            
             for (const auto& message : jsonData["messages"]) {
                 Json::Value emailData;
                 emailData["id"] = message["id"].asString();
-                emailData["internalDate"] = message["internalDate"].asInt();
+                emailData["internalDate"] = currentTime;
                 string emailDetails = getEmailDetails(message["id"].asString());
 
-                // Tách emailDetails thành key-value pairs
+                
                 vector<string> emailDetailsParts;
                 size_t pos = 0;
                 string token;
@@ -218,7 +305,7 @@ vector<string> EmailFetcher::getEmailNow() {
                     if (colonPos != string::npos) {
                         string key = part.substr(0, colonPos);
                         string value = part.substr(colonPos + 1);
-                        value.erase(0, value.find_first_not_of(" ")); // Xóa dấu cách thừa
+                        value.erase(0, value.find_first_not_of(" "));
                         emailDetailsObject[key] = value;
                     }
                 }
@@ -229,7 +316,7 @@ vector<string> EmailFetcher::getEmailNow() {
                 cout << emailData.toStyledString() << endl;
                 lastFetchedTime = max(lastFetchedTime, emailData["internalDate"].asInt());
             }
-            lastFetchedTime = 0;
+			//lastFetchedTime = 0;
             return emails;
         }
         else {
@@ -343,17 +430,45 @@ string EmailFetcher::parseEmailContent(const Json::Value& emailData) {
         }
     }
 
-    // Get body
-    if (emailData.isMember("payload") && emailData["payload"].isMember("body")) {
-        const Json::Value& body = emailData["payload"]["body"];
-        if (body.isMember("data")) {
-            string encoded = body["data"].asString();
-            result << "\nContent:\n" << decodeBase64(encoded) << "\n";
-        }
+    // Get body from snippet
+    if (emailData.isMember("snippet")) {
+        result << "Content: " << emailData["snippet"].asString() << "\n";
     }
-
     return result.str();
 }
+
+//string EmailFetcher::parseEmailContent(const Json::Value& emailData) {
+//    cout << "\n=== Debug Email Structure ===\n";
+//    cout << emailData.toStyledString() << endl;
+//
+//    if (emailData.isMember("payload")) {
+//        const Json::Value& payload = emailData["payload"];
+//
+//        cout << "\n=== Debug Parts ===\n";
+//        if (payload.isMember("parts")) {
+//            const Json::Value& parts = payload["parts"];
+//            for (const auto& part : parts) {
+//                cout << "Part type: " << part["mimeType"].asString() << endl;
+//                cout << "Has body: " << part.isMember("body") << endl;
+//                if (part.isMember("body")) {
+//                    cout << "Body has data: " << part["body"].isMember("data") << endl;
+//                }
+//            }
+//        }
+//
+//        // Process parts
+//        if (payload.isMember("parts")) {
+//            for (const auto& part : payload["parts"]) {
+//                if (part["mimeType"].asString() == "text/plain" &&
+//                    part.isMember("body") &&
+//                    part["body"].isMember("data")) {
+//                    return decodeBase64(part["body"]["data"].asString());
+//                }
+//            }
+//        }
+//    }
+//    return "";
+//}
 
 string EmailFetcher::getEmailDetails(const string& messageId) {
     vector<string> headers = {

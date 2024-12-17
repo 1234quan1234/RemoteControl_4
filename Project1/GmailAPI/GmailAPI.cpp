@@ -44,6 +44,10 @@ bool GmailAPI::sendEmail(const string& to, const string& subject, const string& 
 	return emailFetcher.sendEmail(to, subject, body, attachmentPath);
 }
 
+bool GmailAPI::sendSimpleEmail(const string& to, const string& subject, const string& body) {
+	return emailFetcher.sendSimpleEmail(to, subject, body);
+}   
+
 std::string GmailAPI::getAuthorizationUrl() const {
     return "https://accounts.google.com/o/oauth2/auth?"
         "response_type=code&"

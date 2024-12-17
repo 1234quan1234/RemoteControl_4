@@ -1,25 +1,22 @@
 ﻿#include "WebcamCapture.h"
 
 WebcamCapture::WebcamCapture() {
-    pGraph = NULL;
-    pFilter = NULL;
-    pEnum = NULL;
-    pPin = NULL;
+    pReader = NULL;
+    pSource = NULL;
+    pAttributes = NULL;
+    pMediaType = NULL;
+
+    // Initialize Media Foundation
+    MFStartup(MF_VERSION);
 }
 
 WebcamCapture::~WebcamCapture() {
-    if (pGraph) {
-        pGraph->Release();
-    }
-    if (pFilter) {
-        pFilter->Release();
-    }
-    if (pEnum) {
-        pEnum->Release();
-    }
-    if (pPin) {
-        pPin->Release();
-    }
+    if (pMediaType) pMediaType->Release();
+    if (pReader) pReader->Release();
+    if (pSource) pSource->Release();
+    if (pAttributes) pAttributes->Release();
+
+    MFShutdown();
 }
 
 HRESULT WebcamCapture::GetUnconnectedPin(IBaseFilter* pFilter, PIN_DIRECTION direction, IPin** ppPin) {
@@ -149,6 +146,16 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
     }
     free(pImageCodecInfo);
     return -1;
+}
+
+wstring WebcamCapture::StringToWString(const string& str) {
+    if (str.empty()) return wstring();
+
+    int size_needed = MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), NULL, 0);
+    wstring wstrTo(size_needed, 0);
+    MultiByteToWideChar(CP_UTF8, 0, &str[0], (int)str.size(), &wstrTo[0], size_needed);
+
+    return wstrTo;
 }
 
 bool WebcamCapture::captureImage(const char* filename) {
@@ -360,7 +367,7 @@ bool WebcamCapture::captureImage(const char* filename) {
         // Initialize GDI+ at the beginning of the scope
         Gdiplus::GdiplusStartupInput gdiplusStartupInput;
         ULONG_PTR gdiplusToken;
-        GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+        Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
         // Lock buffer and get data
         BYTE* pData = NULL;
@@ -384,7 +391,6 @@ bool WebcamCapture::captureImage(const char* filename) {
                 BYTE* yPlane = pData;
                 BYTE* uvPlane = pData + (width * height);
 
-                // [Code chuyển đổi màu giữ nguyên]
                 for (UINT32 y = 0; y < height; y++) {
                     for (UINT32 x = 0; x < width; x++) {
                         int yIndex = y * width + x;
@@ -416,7 +422,7 @@ bool WebcamCapture::captureImage(const char* filename) {
                 // Initialize GDI+
                 Gdiplus::GdiplusStartupInput gdiplusStartupInput;
                 ULONG_PTR gdiplusToken;
-                GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
+                Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL);
 
                 {
                     // Tạo và sử dụng bitmap
@@ -430,11 +436,9 @@ bool WebcamCapture::captureImage(const char* filename) {
                             success = true;
                         }
                     }
-                    // Bitmap sẽ bị destroy ở đây, nhưng rgbBuffer vẫn còn tồn tại
                 }
 
                 Gdiplus::GdiplusShutdown(gdiplusToken);
-                // rgbBuffer tự động được giải phóng khi shared_ptr bị destroy
             }
             pBuffer->Unlock();
         }
@@ -453,4 +457,133 @@ bool WebcamCapture::captureImage(const char* filename) {
 
     MFShutdown();
     return success;
+}
+
+bool WebcamCapture::captureVideo(const char* filename) {
+    if (!filename) return false;
+    cout << "[DEBUG] Starting video capture...\n";
+
+    HRESULT hr = S_OK;
+    IMFSinkWriter* pSinkWriter = NULL;
+    IMFMediaSession* pSession = NULL;
+    IMFTopology* pTopology = NULL;
+    DWORD streamIndex = 0;
+    PROPVARIANT varStart;
+    PropVariantInit(&varStart);
+
+    try {
+        // Create media session for preview
+        hr = MFCreateMediaSession(NULL, &pSession);
+        if (FAILED(hr)) throw "Failed to create media session";
+
+        // Create attributes
+        hr = MFCreateAttributes(&pAttributes, 2);
+        if (FAILED(hr)) throw "Failed to create attributes";
+
+        hr = pAttributes->SetGUID(
+            MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE,
+            MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
+        
+        // Enumerate devices
+        IMFActivate** ppDevices = NULL;
+        UINT32 deviceCount = 0;
+        hr = MFEnumDeviceSources(pAttributes, &ppDevices, &deviceCount);
+        if (FAILED(hr) || deviceCount == 0) throw "No webcam found";
+
+        // Activate webcam
+        hr = ppDevices[0]->ActivateObject(IID_PPV_ARGS(&pSource));
+        if (FAILED(hr)) throw "Failed to activate webcam";
+
+        // Create preview topology
+        hr = MFCreateTopology(&pTopology);
+        if (FAILED(hr)) throw "Failed to create topology";
+
+        // Create EVR (Enhanced Video Renderer)
+        IMFActivate* pActivate = NULL;
+        hr = MFCreateVideoRendererActivate(GetDesktopWindow(), &pActivate);
+
+        // Add source and sink to topology
+        IMFTopologyNode* pSourceNode = NULL, * pOutputNode = NULL;
+        hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &pSourceNode);
+        hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &pOutputNode);
+
+        // Configure source
+        hr = pSourceNode->SetUnknown(MF_TOPONODE_SOURCE, pSource);
+        hr = pOutputNode->SetObject(pActivate);
+
+        hr = pTopology->AddNode(pSourceNode);
+        hr = pTopology->AddNode(pOutputNode);
+        hr = pSourceNode->ConnectOutput(0, pOutputNode, 0);
+
+        // Start preview
+        hr = pSession->Start(&GUID_NULL, &varStart);
+        if (FAILED(hr)) throw "Failed to start preview";
+
+        // Create media type for recording
+        IMFMediaType* pVideoOutType = NULL;
+        hr = MFCreateMediaType(&pVideoOutType);
+        hr = pVideoOutType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
+        hr = pVideoOutType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
+        hr = MFSetAttributeSize(pVideoOutType, MF_MT_FRAME_SIZE, 320, 240);
+        hr = MFSetAttributeRatio(pVideoOutType, MF_MT_FRAME_RATE, 15, 1);
+        hr = pVideoOutType->SetUINT32(MF_MT_AVG_BITRATE, 250000);
+
+        // Create sink writer
+        hr = MFCreateSinkWriterFromURL(
+            StringToWString(filename).c_str(),
+            NULL,
+            NULL,
+            &pSinkWriter);
+        if (FAILED(hr)) throw "Failed to create sink writer";
+
+        hr = pSinkWriter->AddStream(pVideoOutType, &streamIndex);
+        hr = pSinkWriter->BeginWriting();
+
+        // Record frames (15fps * 7 seconds = 105 frames)
+        LONGLONG rtStart = 0;
+        for (int i = 0; i < 105; i++) {
+            IMFSample* pSample = NULL;
+            DWORD flags = 0;
+            hr = pReader->ReadSample(
+                MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                0,
+                NULL,
+                &flags,
+                NULL,
+                &pSample);
+
+            if (SUCCEEDED(hr) && pSample) {
+                pSample->SetSampleTime(rtStart);
+                rtStart += 666666; // 1/15 second
+                hr = pSinkWriter->WriteSample(streamIndex, pSample);
+                pSample->Release();
+            }
+        }
+
+        // Cleanup
+        hr = pSinkWriter->Finalize();
+        hr = pSession->Stop();
+
+        PropVariantClear(&varStart);
+        if (pSession) pSession->Release();
+        if (pTopology) pTopology->Release();
+        if (pSinkWriter) pSinkWriter->Release();
+        if (pVideoOutType) pVideoOutType->Release();
+        if (pSourceNode) pSourceNode->Release();
+        if (pOutputNode) pOutputNode->Release();
+        if (pActivate) pActivate->Release();
+
+        return true;
+    }
+    catch (const char* error) {
+        cout << "Error: " << error << endl;
+        return false;
+    }
+}
+
+// Helper function to convert string to wstring
+std::wstring StringToWString(const std::string& str) {
+    std::wstring wstr(str.length(), L' ');
+    std::copy(str.begin(), str.end(), wstr.begin());
+    return wstr;
 }
