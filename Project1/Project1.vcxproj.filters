@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Client\Client_Gmail.cpp" />
     <ClCompile Include="Client\HttpClient.cpp" />
     <ClCompile Include="Functions\EmailFetcher.cpp" />
     <ClCompile Include="Functions\KeyboardTracker.cpp" />
@@ -16,6 +15,9 @@
     <ClCompile Include="RemoteControl\SystemInfo.cpp" />
     <ClCompile Include="Server\EmailMonitor.cpp" />
     <ClCompile Include="Server\ServerManager.cpp" />
+    <ClCompile Include="Functions\FileList.cpp" />
+    <ClCompile Include="Functions\Power.cpp" />
+    <ClCompile Include="Functions\ServiceList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -60,73 +62,29 @@
     <ClCompile Include="Server\EmailMonitor.cpp">
       <Filter>Source Files\Server</Filter>
     </ClCompile>
-    <ClCompile Include="Functions\ServiceList.cpp">
-      <Filter>Source Files\Functions</Filter>
-    </ClCompile>
-    <ClCompile Include="Functions\FileList.cpp">
-      <Filter>Source Files\Functions</Filter>
-    </ClCompile>
-    <ClCompile Include="Functions\Power.cpp">
-      <Filter>Source Files\Functions</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client\HttpClient.h">
-      <Filter>Header Files\Client</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\KeyboardTracker.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\RunningApps.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\ScreenshotHandler.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\WebcamCapture.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="GmailAPI\TokenInfo.h">
-      <Filter>Header Files\GmailAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="GmailAPI\TokenManager.h">
-      <Filter>Header Files\GmailAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="GmailAPI\CurlWrapper.h">
-      <Filter>Header Files\GmailAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="GmailAPI\GmailAPI.h">
-      <Filter>Header Files\GmailAPI</Filter>
-    </ClInclude>
-    <ClInclude Include="Interface\MenuSystem.h">
-      <Filter>Header Files\Interface</Filter>
-    </ClInclude>
-    <ClInclude Include="Libs\Header.h">
-      <Filter>Header Files\Libs</Filter>
-    </ClInclude>
-    <ClInclude Include="RemoteControl\SystemInfo.h">
-      <Filter>Header Files\RemoteControl</Filter>
-    </ClInclude>
-    <ClInclude Include="Server\EmailMonitor.h">
-      <Filter>Header Files\Server</Filter>
-    </ClInclude>
-    <ClInclude Include="Server\ServerManager.h">
-      <Filter>Header Files\Server</Filter>
-    </ClInclude>
-    <ClInclude Include="Server\Config.h">
-      <Filter>Header Files\Server</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\EmailFetcher.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\ServiceList.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\FileList.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
-    <ClInclude Include="Functions\Power.h">
-      <Filter>Header Files\Functions</Filter>
-    </ClInclude>
+    <ClInclude Include="Client\HttpClient.h" />
+    <ClInclude Include="Functions\EmailFetcher.h" />
+    <ClInclude Include="Functions\FileList.h" />
+    <ClInclude Include="Functions\Power.h" />
+    <ClInclude Include="Functions\KeyboardTracker.h" />
+    <ClInclude Include="Functions\RunningApps.h" />
+    <ClInclude Include="Functions\ScreenshotHandler.h" />
+    <ClInclude Include="Functions\ServiceList.h" />
+    <ClInclude Include="Functions\WebcamCapture.h" />
+    <ClInclude Include="GmailAPI\CurlWrapper.h" />
+    <ClInclude Include="GmailAPI\GmailAPI.h" />
+    <ClInclude Include="GmailAPI\TokenInfo.h" />
+    <ClInclude Include="GmailAPI\TokenManager.h" />
+    <ClInclude Include="Interface\MenuSystem.h" />
+    <ClInclude Include="Libs\Header.h" />
+    <ClInclude Include="RemoteControl\SystemInfo.h" />
+    <ClInclude Include="Server\Config.h" />
+    <ClInclude Include="Server\EmailMonitor.h" />
+    <ClInclude Include="Server\ServerManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ClientSecrets.json" />
   </ItemGroup>
 </Project>

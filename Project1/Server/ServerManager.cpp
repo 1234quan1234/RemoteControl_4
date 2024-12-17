@@ -48,7 +48,9 @@ void ServerManager::processCommands() {
         //logActivity("Processing commands");
     }
     else {
-	    this->currentCommand = "";
+	    this->currentCommand.content = "";
+		this->currentCommand.from = "";
+		this->currentCommand.message = "";
     }
 }
 
@@ -68,62 +70,16 @@ void ServerManager::handleCommand(const Json::Value& command) {
     string subject = command["Subject"].asString();
     if (subject.find("Command") != string::npos) {
         // Xử lý lệnh
-        string commandStr = subject.substr(subject.find("Command") + 9);
+        this->currentCommand.content = subject.substr(subject.find("Command") + 9);
         
         string subject = command["Subject"].asString();
         string fromEmail = command["From"].asString();
+		this->currentCommand.from = fromEmail;
+
 
         // Xử lý request access trước
-        if (commandStr == "requestAccess") {
-            // Check if already has access
-            auto it = std::find_if(approvedAccess.begin(), approvedAccess.end(),
-                [&fromEmail](const AccessInfo& access) {
-                    return access.email == fromEmail;
-                });
-
-            if (it != approvedAccess.end() && isAccessValid(*it)) {
-                // Calculate remaining time
-                time_t now = time(nullptr);
-                time_t expiryTime = it->grantedTime + (AccessInfo::VALIDITY_HOURS * 3600);
-                double hoursLeft = difftime(expiryTime, now) / 3600.0;
-
-                // Format expiry time
-                struct tm timeinfo;
-                localtime_s(&timeinfo, &expiryTime);
-                char timeStr[80];
-                strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
-
-                gmail.sendSimpleEmail(fromEmail, "Access Info",
-                    "You already have access.\nExpires at: " + string(timeStr) +
-                    "\nHours remaining: " + std::to_string(static_cast<int>(hoursLeft)));
-                return;
-            }
-
-            std::cout << "\nAccess Request from: " << fromEmail << "\n";
-            std::cout << "Grant access? (y/n): ";
-            char response;
-            std::cin >> response;
-
-            if (response == 'y' || response == 'Y') {
-                AccessInfo access;
-                access.email = fromEmail;
-                access.grantedTime = time(nullptr);
-                approvedAccess.push_back(access);
-                saveAccessList();
-
-                time_t expiryTime = access.grantedTime + (AccessInfo::VALIDITY_HOURS * 3600);
-                struct tm timeinfo;
-                localtime_s(&timeinfo, &expiryTime);
-                char timeStr[80];
-                strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
-
-                gmail.sendSimpleEmail(fromEmail, "Access Granted",
-                    "Access granted for 24 hours.\nExpires at: " + string(timeStr));
-            }
-            else {
-                gmail.sendSimpleEmail(fromEmail, "Access Denied",
-                    "Your access request was denied.");
-            }
+        if (this->currentCommand.content == "requestAccess") {
+            this->currentCommand.from = fromEmail;
             return;
         }
 
@@ -131,55 +87,59 @@ void ServerManager::handleCommand(const Json::Value& command) {
         if (!isEmailApproved(fromEmail)) {
             gmail.sendSimpleEmail(fromEmail, "Access Denied",
                 "You need to request access first.");
+            this->currentCommand.message = "Access denied. Request access first.";            
+
             return;
         }
 
-        else if (commandStr == "listProcess") {
+        else if (this->currentCommand.content == "listProcess") {
             handleProcessListCommand(command);
             return; 
         }
-        else if (this->currentCommand == "readRecentEmails") {
+        else if (this->currentCommand.content == "readRecentEmails") {
             handleReadRecentEmailsCommand(command);
             return;
         }
-        else if (this->currentCommand == "captureScreen") {
+        else if (this->currentCommand.content == "captureScreen") {
             handleCaptureScreen(command);
             return;
         }
-        else if (commandStr == "recordScreen") {
+        else if (this->currentCommand.content == "recordScreen") {
             return;
         }
-        else if (this->currentCommand == "captureWebcam") {
+        else if (this->currentCommand.content == "captureWebcam") {
             handleCaptureWebcam(command);
             return;
         }
-        else if (commandStr == "recordWebcam") {
+        else if (this->currentCommand.content == "recordWebcam") {
             handleRecordWebcam(command);
             return;
         }
-        else if (commandStr == "trackKeyboard") {
+        else if (this->currentCommand.content == "trackKeyboard") {
             handleTrackKeyboard(command);
             return;
         }
-        else if (commandStr == "listService") {
+        else if (this->currentCommand.content == "listService") {
             handleListService(command);
             return;
         }
-        else if (commandStr == "listFile") {
+        else if (this->currentCommand.content == "listFile") {
             handleListFile(command);
             return;
         }
-        else if (commandStr == "Shutdown" || commandStr == "Restart" || commandStr == "Sleep" || commandStr == "Lock" || commandStr == "Hibernate") {
+        else if (this->currentCommand.content == "Shutdown" || this->currentCommand.content == "Restart" || this->currentCommand.content == "Sleep" || this->currentCommand.content == "Lock" || this->currentCommand.content == "Hibernate") {
 			handlePowerCommand(command);
 			return;
         }
         else {
             // Handle unknown command
             response["message"] = "Unknown command";
+			this->currentCommand.message = "Unknown command";
         }
     }
     else {
         response["message"] = "Invalid command format";
+		this->currentCommand.message = "Invalid command format";
     }
 }
 
@@ -245,8 +205,8 @@ bool ServerManager::isEmailApproved(const string& email) {
 void ServerManager::handleProcessListCommand(const Json::Value& command) {
     cout << "Handling process list command..." << endl;
     // Get the sender's email address
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
     // Get process list
     vector<ProcessInfo> processes = RunningApps::getRunningApps();
@@ -264,18 +224,20 @@ void ServerManager::handleProcessListCommand(const Json::Value& command) {
     string subject = "Process List";
     string body = "";
 
-    if (gmail.sendEmail(senderEmail, subject, body, filename)) {
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
         cout << "Process list sent successfully via email" << endl;
+		this->currentCommand.message = "Process list sent successfully via email";
     }
     else {
         cout << "Failed to send process list via email" << endl;
+		this->currentCommand.message = "Failed to send process list via email";
     }
 }
 
 void ServerManager::handleReadRecentEmailsCommand(const Json::Value& command) {
     cout << "Handling read recent emails command..." << endl;
     // Get the sender's email address
-    string senderEmail = command["From"].asString();
+    this->currentCommand.from = command["From"].asString();
 
     // Get the recent emails from Gmail API
     vector<string> recentEmails = gmail.getRecentEmails();
@@ -296,11 +258,13 @@ void ServerManager::handleReadRecentEmailsCommand(const Json::Value& command) {
     string subject = "Recent emails";
     string body = "";
 
-    if (gmail.sendEmail(senderEmail, subject, body, filename)) {
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
         cout << "Recent received emails sent successfully via email" << endl;
+		this->currentCommand.message = "Recent received emails sent successfully via email";
     }
     else {
         cout << "Failed to send recent received emails via email" << endl;
+		this->currentCommand.message = "Failed to send recent received emails via email";
     }
 }
 
@@ -309,27 +273,31 @@ void ServerManager::handleCaptureWebcam(const Json::Value& command) {
     WebcamCapture webcamCapture;
 
     // Get the sender's email address
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
-   string path = "D:\\webcam_capture_" + to_string(time(nullptr)) + ".jpg";
+    string path = "D:\\webcam_capture_" + to_string(time(nullptr)) + ".jpg";
 
     // Gọi hàm captureImage
     if (webcamCapture.captureImage(path.c_str())) {
-        cout << "Screenshot captured successfully. Saved in: " << path << endl;
+        cout << "Webcam captured successfully. Saved in: " << path << endl;
+		this->currentCommand.message = "Webcam captured successfully. Saved in: " + path;
     }
     else {
-		cout << "Screenshot capture failed" << endl;
+        cout << "Webcam capture failed" << endl;
+		this->currentCommand.message = "Webcam capture failed";
     }
 
-	string subject = "Webcam Capture";
+    string subject = "Webcam Capture";
     string body = "";
 
-    if (gmail.sendEmail(senderEmail, subject, body, path)) {
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, path)) {
         cout << "Webcam capture sent successfully via email" << endl;
+		this->currentCommand.message += "\nWebcam capture sent successfully via email";
     }
     else {
         cout << "Failed to send webcam capture via email" << endl;
+		this->currentCommand.message += "\nFailed to send webcam capture via email";
     }
 }
 
@@ -338,62 +306,66 @@ void ServerManager::handleRecordWebcam(const Json::Value& command) {
     WebcamCapture webcamCapture;
 
     // Get sender's email
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
     // Create filename with timestamp
     string filename = "D:\\webcam_record_" + to_string(time(nullptr)) + ".mp4";
 
     // Record video
     if (webcamCapture.captureVideo(filename.c_str())) {
-        cout << "Video recording successful!" << endl;
-        
+        cout << "Video recording successful!" << endl;\
+			this->currentCommand.message = "Video recording successful!";
+
         // Send email with video attachment
         string subject = "Webcam Recording";
-        string body = "Here's your webcam recording!";
+        string body = "";
 
-        if (gmail.sendEmail(senderEmail, subject, body, filename)) {
+        if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
             cout << "Video recording sent successfully via email" << endl;
+			this->currentCommand.message += "\nVideo recording sent successfully via email";
         }
         else {
             cout << "Failed to send video recording via email" << endl;
+            this->currentCommand.message += "\nFailed to send video recording";
         }
     }
     else {
         cout << "Video recording failed!" << endl;
+		this->currentCommand.message = "Video recording failed";
     }
 
 }
 
 void ServerManager::handleCaptureScreen(const Json::Value& command) {
-	// Create screenshot handler
-	ScreenshotHandler screenshotHandler;
+    // Create screenshot handler
+    ScreenshotHandler screenshotHandler;
 
     // Get the sender's email address
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
-	// Create filename with timestamp
-	time_t now = time(nullptr);
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &now);
-	char timestamp[64];
-	strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", &timeinfo);
+    // Create filename with timestamp
+    time_t now = time(nullptr);
+    struct tm timeinfo;
+    localtime_s(&timeinfo, &now);
+    char timestamp[64];
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", &timeinfo);
 
-	std::string filename = "D:\\screenshot_" + std::string(timestamp) + ".jpg";
+    std::string filename = "D:\\screenshot_" + std::string(timestamp) + ".jpg";
 
-	// Capture screenshot
-	if (screenshotHandler.captureWindow(filename)) {
-		std::cout << "Screenshot captured successfully. Saved to: " << filename << std::endl;
-	}
-	else {
-		std::cout << "Failed to capture screenshot" << std::endl;
-	}
+    // Capture screenshot
+    if (screenshotHandler.captureWindow(filename)) {
+        std::cout << "Screenshot captured successfully. Saved to: " << filename << std::endl;
+    }
+    else {
+        std::cout << "Failed to capture screenshot" << std::endl;
+    }
 
     string subject = "Screen Capture";
     string body = "";
 
-    if (gmail.sendEmail(senderEmail, subject, body, filename)) {
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
         cout << "Screen capture sent successfully via email" << endl;
     }
     else {
@@ -405,13 +377,14 @@ void ServerManager::handleTrackKeyboard(const Json::Value& command) {
     int duration = command.get("duration", 5).asInt();
 
     // Get the sender's email address
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
     // Create results directory using Windows API
     if (!CreateDirectoryA("results", NULL) &&
         GetLastError() != ERROR_ALREADY_EXISTS) {
         std::cout << "Failed to create results directory" << std::endl;
+		this->currentCommand.message = "Failed to create results directory";
         return;
     }
 
@@ -442,24 +415,28 @@ void ServerManager::handleTrackKeyboard(const Json::Value& command) {
 
         tracker.StopTracking();
         std::cout << "Keyboard tracking completed. Log saved to: " << filename << std::endl;
+		this->currentCommand.message = "Keyboard tracking completed. Log saved to: " + filename;
     }
 
-    string subject = "Hello!";
-    string body = "Email Content!";
+    string subject = "Keyboard Tracking";
+    string body = "";
 
-    if (gmail.sendEmail(senderEmail, subject, body, filename)) {
-        cout << "Screen capture sent successfully via email" << endl;
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
+		cout << "Keyboard tracking log sent successfully via email" << endl;
+		this->currentCommand.message += "\nKeyboard tracking log sent successfully via email";
+
     }
     else {
         cout << "Failed to send screen capture via email" << endl;
+		this->currentCommand.message += "\nFailed to send screen capture via email";
     }
 }
 
 void ServerManager::handleListService(const Json::Value& command) {
 
     // Get the sender's email address
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
     // Create timestamp for filename
     time_t now = time(nullptr);
@@ -475,61 +452,69 @@ void ServerManager::handleListService(const Json::Value& command) {
     ServiceList services;
     if (services.writeServicesToFile(filename)) {
         std::cout << "Services list saved to: " << filename << std::endl;
+		this->currentCommand.message = "Services list saved to: " + filename;
     }
     else {
         std::cout << "Failed to save services list" << std::endl;
+		this->currentCommand.message = "Failed to save services list";
+    }
+
+	string subject = "List of Services";
+    string body = "";
+
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
+        cout << "Screen capture sent successfully via email" << endl;
+		this->currentCommand.message += "\nScreen capture sent successfully via email";
+    }
+    else {
+        cout << "Failed to send screen capture via email" << endl;
+		this->currentCommand.message += "\nFailed to send screen capture via email";
+    }
+}
+
+void ServerManager::handleListFile(const Json::Value& command) {
+    // Get the sender's email address
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
+
+    // Create timestamp for filename
+    time_t now = time(nullptr);
+    struct tm timeinfo;
+    localtime_s(&timeinfo, &now);
+    char timestamp[64];
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", &timeinfo);
+
+    // Create filename
+    std::string filename = "D:\\file_list_" + std::string(timestamp) + ".txt";
+
+    // Create and use FileList
+    FileList files;
+    if (files.writeFilesToFile(filename)) {
+        std::cout << "Files list saved to: " << filename << std::endl;
+		this->currentCommand.message = "Files list saved to: " + filename;
+    }
+    else {
+        std::cout << "Failed to save files list" << std::endl;
+		this->currentCommand.message = "Failed to save files list";
     }
 
     string subject = "Hello!";
     string body = "Email Content!";
 
-    if (gmail.sendEmail(senderEmail, subject, body, filename)) {
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
         cout << "Screen capture sent successfully via email" << endl;
+		this->currentCommand.message += "\nScreen capture sent successfully via email";
     }
     else {
         cout << "Failed to send screen capture via email" << endl;
+		this->currentCommand.message += "\nFailed to send screen capture via email";
     }
-}
-
-void ServerManager::handleListFile(const Json::Value& command) {
-	// Get the sender's email address
-	string senderEmail = command["From"].asString();
-	cout << "Sender email: " << senderEmail << endl;
-
-	// Create timestamp for filename
-	time_t now = time(nullptr);
-	struct tm timeinfo;
-	localtime_s(&timeinfo, &now);
-	char timestamp[64];
-	strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", &timeinfo);
-
-	// Create filename
-	std::string filename = "D:\\file_list_" + std::string(timestamp) + ".txt";
-
-	// Create and use FileList
-	FileList files;
-	if (files.writeFilesToFile(filename)) {
-		std::cout << "Files list saved to: " << filename << std::endl;
-	}
-	else {
-		std::cout << "Failed to save files list" << std::endl;
-	}
-
-	string subject = "Hello!";
-	string body = "Email Content!";
-
-	if (gmail.sendEmail(senderEmail, subject, body, filename)) {
-		cout << "Screen capture sent successfully via email" << endl;
-	}
-	else {
-		cout << "Failed to send screen capture via email" << endl;
-	}
 }
 
 void ServerManager::handlePowerCommand(const Json::Value& command) {
     // Get sender's email
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
 
     // Get power action type from subject
     string actionType = command["Subject"].asString();
@@ -542,28 +527,34 @@ void ServerManager::handlePowerCommand(const Json::Value& command) {
     if (actionType == "Shutdown") {
         success = PowerManager::Shutdown(false);
         resultMessage = "Shutdown command executed";
+		this->currentCommand.message = "Shutdown command executed";
     }
     else if (actionType == "Restart") {
         success = PowerManager::Restart(false);
         resultMessage = "Restart command executed";
+		this->currentCommand.message = "Restart command executed";
     }
     else if (actionType == "Hibernate") {
         success = PowerManager::Hibernate();
         resultMessage = "Hibernate command executed";
+		this->currentCommand.message = "Hibernate command executed";
     }
     else if (actionType == "Sleep") {
         success = PowerManager::Sleep();
         resultMessage = "Sleep command executed";
+		this->currentCommand.message = "Sleep command executed";
     }
     else if (actionType == "Lock") {
         success = PowerManager::Lock();
         resultMessage = "Lock command executed";
+		this->currentCommand.message = "Lock command executed";
     }
 
     // Send response email
     string subject = "Power Command Result";
     string body = success ? "Successfully executed: " + actionType : "Failed to execute: " + actionType;
 
-    gmail.sendEmail(senderEmail, subject, body, "");
-    cout << "Power command response sent to: " << senderEmail << endl;
+    gmail.sendEmail(this->currentCommand.from, subject, body, "");
+    cout << "Power command response sent to: " << this->currentCommand.from << endl;
+	this->currentCommand.message += "\nPower command response sent to: " + this->currentCommand.from;
 }

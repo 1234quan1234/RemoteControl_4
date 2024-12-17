@@ -12,7 +12,6 @@ private:
     time_t lastCheckTime;
     const int CHECK_INTERVAL = 5;  // 5 seconds
 
-    string getMyEmail();
     string decodeBase64(const string& encoded);
     string parseEmailContent(const Json::Value& emailData);
     bool readAttachmentFile(const string& path, string& content);
@@ -28,6 +27,7 @@ private:
     );
 
 public:
+    string getMyEmail();
     EmailFetcher(CurlWrapper& curl, TokenManager& tokenManager);
     vector<string> getEmailNow();
     vector<string> getRecentEmails();
