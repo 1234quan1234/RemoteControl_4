@@ -1,241 +1,231 @@
 ﻿#include <wx/wx.h>
-#include <wx/clipbrd.h>
-#include <wx/hyperlink.h>
+#include <wx/textctrl.h>
+#include <wx/stattext.h>
+#include <wx/button.h>
+#include <wx/msgdlg.h>
+#include <wx/listbox.h>
 #include "Server/ServerManager.h"
 #include "RemoteControl/SystemInfo.h"
 
-class GmailRemoteControlApp : public wxApp {
-public:
-    bool OnInit() override;
-};
-
-class MainFrame : public wxFrame {
+class ServerWindow : public wxFrame {
 private:
-    GmailAPI* gmailApi;
-    ServerManager* server;
-    SystemInfo* sysInfo;
+    // Main components
+    wxTextCtrl* m_authCodeCtrl;
+    wxButton* m_authenticateButton;
+    wxStaticText* m_statusText;
+    wxListBox* m_logListBox;
 
-    // Authentication Section
-    wxStaticText* authInstructionText;
-    wxHyperlinkCtrl* authUrlLink;
-    wxTextCtrl* authCodeInput;
-    wxButton* authenticateButton;
+    // Backend components
+    GmailAPI* m_api;
+    ServerManager* m_server;
+    SystemInfo* m_sysInfo;
 
-    // System Info Section
-    wxStaticText* hostnameLabel;
-    wxStaticText* localIPLabel;
-    wxStaticText* gmailNameLabel;
-
-    // Command Section
-    wxStaticText* currentCommandLabel;
-    wxTimer* commandUpdateTimer;
-
-    void OnAuthenticate(wxCommandEvent& event);
-    void UpdateCommandDisplay(wxTimerEvent& event);
-    void OnClose(wxCloseEvent& event);
+    // Authentication URL
+    wxString m_authUrl;
 
 public:
-    MainFrame();
-    ~MainFrame();
+    ServerWindow() : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control System", wxDefaultPosition, wxSize(1800, 900)) {
+        // Create main panel
+        wxPanel* panel = new wxPanel(this, wxID_ANY);
 
-    void InitializeGmailAPI();
-    void SetupAuthenticationUI();
-    void SetupSystemInfoUI();
-    void SetupCommandUI();
-};
+        // Create sizers
+        wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+        wxBoxSizer* authSizer = new wxBoxSizer(wxHORIZONTAL);
 
-wxIMPLEMENT_APP(GmailRemoteControlApp);
+        // Authentication URL display
+        wxStaticText* urlLabel = new wxStaticText(panel, wxID_ANY, "Authentication URL:");
+        mainSizer->Add(urlLabel, 0, wxALL, 10);
 
-bool GmailRemoteControlApp::OnInit() {
-    MainFrame* frame = new MainFrame();
-    frame->Show(true);
-    return true;
-}
+        // Status text for displaying messages
+        m_statusText = new wxStaticText(panel, wxID_ANY, "Initializing...");
+        mainSizer->Add(m_statusText, 0, wxALL | wxEXPAND, 10);
 
-MainFrame::MainFrame()
-    : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control System",
-        wxDefaultPosition, wxSize(500, 400)) {
-
-    // Create vertical box sizer for entire frame
-    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
-
-    // Setup sections
-    SetupAuthenticationUI();
-    SetupSystemInfoUI();
-    SetupCommandUI();
-
-    // Add timers and event handlers
-    commandUpdateTimer = new wxTimer(this);
-    Bind(wxEVT_TIMER, &MainFrame::UpdateCommandDisplay, this, commandUpdateTimer->GetId());
-    Bind(wxEVT_CLOSE_WINDOW, &MainFrame::OnClose, this);
-
-    SetSizer(mainSizer);
-    Layout();
-}
-
-void MainFrame::SetupAuthenticationUI() {
-    wxBoxSizer* authSizer = new wxBoxSizer(wxVERTICAL);
-
-    // Authentication Section Header
-    wxStaticBox* authBox = new wxStaticBox(this, wxID_ANY, "Gmail Authentication");
-    wxStaticBoxSizer* authBoxSizer = new wxStaticBoxSizer(authBox, wxVERTICAL);
-
-    // Authentication Instructions
-    authInstructionText = new wxStaticText(this, wxID_ANY,
-        "1. Click the link to open the authorization URL\n"
-        "2. Copy the authorization code\n"
-        "3. Paste the code in the text box and click Authenticate");
-    authBoxSizer->Add(authInstructionText, 0, wxALL | wxEXPAND, 10);
-
-    // Authorization URL Hyperlink
-    authUrlLink = new wxHyperlinkCtrl(this, wxID_ANY,
-        "Click to Open Authorization URL", "");
-    authUrlLink->Bind(wxEVT_HYPERLINK, [this](wxHyperlinkEvent& event) {
-        wxLaunchDefaultBrowser(this->gmailApi->getAuthorizationUrl());
-        });
-    authBoxSizer->Add(authUrlLink, 0, wxALL | wxCENTER, 10);
-
-    // Authorization Code Input
-    wxBoxSizer* codeInputSizer = new wxBoxSizer(wxHORIZONTAL);
-    authCodeInput = new wxTextCtrl(this, wxID_ANY, "",
-        wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
-    authenticateButton = new wxButton(this, wxID_ANY, "Authenticate");
-
-    codeInputSizer->Add(new wxStaticText(this, wxID_ANY, "Authorization Code:"), 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-    codeInputSizer->Add(authCodeInput, 1, wxALIGN_CENTER_VERTICAL);
-    codeInputSizer->Add(authenticateButton, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
-
-    authBoxSizer->Add(codeInputSizer, 0, wxALL | wxEXPAND, 10);
-
-    // Bind authentication button
-    authenticateButton->Bind(wxEVT_BUTTON, &MainFrame::OnAuthenticate, this);
-
-    // Add to main sizer
-    GetSizer()->Add(authBoxSizer, 0, wxALL | wxEXPAND, 10);
-}
-
-void MainFrame::SetupSystemInfoUI() {
-    wxStaticBox* infoBox = new wxStaticBox(this, wxID_ANY, "System Information");
-    wxStaticBoxSizer* infoBoxSizer = new wxStaticBoxSizer(infoBox, wxVERTICAL);
-
-    hostnameLabel = new wxStaticText(this, wxID_ANY, "Hostname: ");
-    localIPLabel = new wxStaticText(this, wxID_ANY, "Local IP: ");
-    gmailNameLabel = new wxStaticText(this, wxID_ANY, "Server's Gmail Name: ");
-
-    infoBoxSizer->Add(hostnameLabel, 0, wxALL, 5);
-    infoBoxSizer->Add(localIPLabel, 0, wxALL, 5);
-    infoBoxSizer->Add(gmailNameLabel, 0, wxALL, 5);
-
-    GetSizer()->Add(infoBoxSizer, 0, wxALL | wxEXPAND, 10);
-}
-
-void MainFrame::SetupCommandUI() {
-    wxStaticBox* commandBox = new wxStaticBox(this, wxID_ANY, "Current Command");
-    wxStaticBoxSizer* commandBoxSizer = new wxStaticBoxSizer(commandBox, wxVERTICAL);
-
-    currentCommandLabel = new wxStaticText(this, wxID_ANY, "Waiting for command...");
-    commandBoxSizer->Add(currentCommandLabel, 0, wxALL | wxCENTER, 10);
-
-    GetSizer()->Add(commandBoxSizer, 0, wxALL | wxEXPAND, 10);
-}
-
-void MainFrame::InitializeGmailAPI() {
-    try {
-        // Load client secrets (same as in original main.cpp)
-        auto secrets = GmailAPI::ReadClientSecrets("\\Resources\\ClientSecrets.json");
-
-        gmailApi = new GmailAPI(
-            secrets["installed"]["client_id"].asString(),
-            secrets["installed"]["client_secret"].asString(),
-            secrets["installed"]["redirect_uris"][0].asString()
-        );
-
-        // Update authorization URL link
-        authUrlLink->SetURL(gmailApi->getAuthorizationUrl());
-
-        // Try to load saved tokens
+        // Authentication process
         try {
-            gmailApi->loadSavedTokens();
-            if (gmailApi->hasValidToken()) {
-                // Authentication successful, update UI
-                authenticateButton->Enable(false);
-                authCodeInput->Enable(false);
-                authUrlLink->Enable(false);
+            // Read client secrets
+            auto secrets = GmailAPI::ReadClientSecrets("/Resources/ClientSecrets.json");
+
+            // Initialize API
+            m_api = new GmailAPI(
+                secrets["installed"]["client_id"].asString(),
+                secrets["installed"]["client_secret"].asString(),
+                secrets["installed"]["redirect_uris"][0].asString()
+            );
+
+            // Get authentication URL
+            m_authUrl = m_api->getAuthorizationUrl();
+
+            // Create URL display text control (read-only)
+            wxTextCtrl* urlDisplay = new wxTextCtrl(panel, wxID_ANY, m_authUrl,
+                wxDefaultPosition, wxDefaultSize, wxTE_READONLY);
+            mainSizer->Add(urlDisplay, 0, wxALL | wxEXPAND, 10);
+
+            // Authentication code input
+            wxStaticText* codeLabel = new wxStaticText(panel, wxID_ANY, "Enter Authorization Code:");
+            mainSizer->Add(codeLabel, 0, wxALL, 10);
+
+            m_authCodeCtrl = new wxTextCtrl(panel, wxID_ANY);
+            authSizer->Add(m_authCodeCtrl, 1, wxALL | wxEXPAND, 10);
+
+            // Authenticate button
+            m_authenticateButton = new wxButton(panel, wxID_ANY, "Authenticate");
+            m_authenticateButton->Bind(wxEVT_BUTTON, &ServerWindow::OnAuthenticate, this);
+            authSizer->Add(m_authenticateButton, 0, wxALL, 10);
+
+            mainSizer->Add(authSizer, 0, wxEXPAND);
+
+            // Log ListBox
+            wxStaticText* logLabel = new wxStaticText(panel, wxID_ANY, "Server Logs:");
+            mainSizer->Add(logLabel, 0, wxALL, 10);
+
+            m_logListBox = new wxListBox(panel, wxID_ANY, wxDefaultPosition, wxSize(-1, 200));
+            mainSizer->Add(m_logListBox, 1, wxALL | wxEXPAND, 10);
+
+            // Server control buttons
+            wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+
+            wxButton* startServerBtn = new wxButton(panel, wxID_ANY, "Start Server");
+            startServerBtn->Bind(wxEVT_BUTTON, &ServerWindow::OnStartServer, this);
+            buttonSizer->Add(startServerBtn, 0, wxALL, 10);
+
+            wxButton* stopServerBtn = new wxButton(panel, wxID_ANY, "Stop Server");
+            stopServerBtn->Bind(wxEVT_BUTTON, &ServerWindow::OnStopServer, this);
+            buttonSizer->Add(stopServerBtn, 0, wxALL, 10);
+
+            mainSizer->Add(buttonSizer, 0, wxCENTER);
+
+            // Set panel sizer
+            panel->SetSizer(mainSizer);
+            mainSizer->Fit(this);
+
+            // Update status
+            m_statusText->SetLabel("Ready to authenticate");
+        }
+        catch (const std::exception& e) {
+            wxMessageBox(wxString::Format("Initialization Error: %s", e.what()),
+                "Error", wxOK | wxICON_ERROR);
+        }
+
+        // Center the window
+        Centre();
+    }
+
+    void OnAuthenticate(wxCommandEvent& event) {
+        try {
+            wxString authCode = m_authCodeCtrl->GetValue();
+            if (authCode.IsEmpty()) {
+                wxMessageBox("Please enter the authorization code", "Error", wxOK | wxICON_WARNING);
+                return;
+            }
+
+            // Authenticate
+            m_api->authenticate(std::string(authCode.mb_str()));
+
+            // Create Client_Gmail after successful authentication
+            auto secrets = GmailAPI::ReadClientSecrets("/Resources/ClientSecrets.json");
+
+            // Log the authentication
+            m_logListBox->Append("Authentication Successful!");
+            m_statusText->SetLabel("Authentication Complete");
+            m_authenticateButton->Enable(false);
+        }
+        catch (const std::exception& e) {
+            wxMessageBox(wxString::Format("Authentication Error: %s", e.what()),
+                "Error", wxOK | wxICON_ERROR);
+        }
+    }
+
+    void OnStartServer(wxCommandEvent& event) {
+        try {
+            // Ensure authentication is complete
+            if (!m_api) {
+                wxMessageBox("Please complete authentication first",
+                    "Server Start Error", wxOK | wxICON_WARNING);
+                return;
+            }
+
+            // Initialize system info
+            m_sysInfo = new SystemInfo();
+
+            // Start server
+            m_server = new ServerManager(*m_api);
+
+            // Log server start
+            m_logListBox->Append("Server Started Successfully");
+            m_statusText->SetLabel("Server Running");
+
+            // Start a timer to process commands periodically
+            Connect(wxID_ANY, wxEVT_TIMER, wxTimerEventHandler(ServerWindow::OnProcessCommands));
+            m_timer = new wxTimer(this);
+            m_timer->Start(5000); // 5-second interval
+        }
+        catch (const std::exception& e) {
+            wxMessageBox(wxString::Format("Server Start Error: %s", e.what()),
+                "Error", wxOK | wxICON_ERROR);
+        }
+    }
+
+    void OnStopServer(wxCommandEvent& event) {
+        try {
+            // Stop the timer
+            if (m_timer) {
+                m_timer->Stop();
+                delete m_timer;
+                m_timer = nullptr;
+            }
+
+            // Clean up resources
+            if (m_server) {
+                delete m_server;
+                m_server = nullptr;
+            }
+
+            if (m_sysInfo) {
+                delete m_sysInfo;
+                m_sysInfo = nullptr;
+            }
+
+            // Log server stop
+            m_logListBox->Append("Server Stopped");
+            m_statusText->SetLabel("Server Stopped");
+        }
+        catch (const std::exception& e) {
+            wxMessageBox(wxString::Format("Server Stop Error: %s", e.what()),
+                "Error", wxOK | wxICON_ERROR);
+        }
+    }
+
+    void OnProcessCommands(wxTimerEvent& event) {
+        try {
+            if (m_server) {
+                m_server->processCommands();
+                m_logListBox->Append("Processing Commands...");
             }
         }
-        catch (const exception& e) {
-            // No valid tokens, prompt for authentication
-            wxMessageBox("Authentication required", "Login", wxOK | wxICON_INFORMATION);
-        }
-
-        // Initialize system info
-        sysInfo = new SystemInfo();
-
-        // Update system info labels
-        hostnameLabel->SetLabel(wxString::Format("Hostname: %s", sysInfo->hostname));
-        localIPLabel->SetLabel(wxString::Format("Local IP: %s", sysInfo->localIP));
-        gmailNameLabel->SetLabel(wxString::Format("Server's Gmail Name: %s", gmailApi->getServerName()));
-
-        // Initialize server
-        server = new ServerManager(*gmailApi);
-
-        // Start command update timer
-        commandUpdateTimer->Start(5000);  // 5-second interval
-    }
-    catch (const std::exception& e) {
-        wxMessageBox(wxString::Format("Initialization Error: %s", e.what()),
-            "Error", wxOK | wxICON_ERROR);
-    }
-}
-
-void MainFrame::OnAuthenticate(wxCommandEvent& event) {
-    try {
-        string authCode = authCodeInput->GetValue().ToStdString();
-        gmailApi->authenticate(authCode);
-
-        // Authentication successful
-        wxMessageBox("Authentication Successful!", "Success", wxOK | wxICON_INFORMATION);
-
-        // Disable authentication controls
-        authenticateButton->Enable(false);
-        authCodeInput->Enable(false);
-        authUrlLink->Enable(false);
-
-        // Update system info
-        gmailNameLabel->SetLabel(wxString::Format("Server's Gmail Name: %s", gmailApi->getServerName()));
-    }
-    catch (const std::exception& e) {
-        wxMessageBox(wxString::Format("Authentication Failed: %s", e.what()),
-            "Error", wxOK | wxICON_ERROR);
-    }
-}
-
-void MainFrame::UpdateCommandDisplay(wxTimerEvent& event) {
-    if (server) {
-        server->processCommands();
-        if (!server->currentCommand.empty()) {
-            currentCommandLabel->SetLabel(wxString::Format("Current Command: %s", server->currentCommand));
-        }
-        else {
-            currentCommandLabel->SetLabel("Waiting for command...");
+        catch (const std::exception& e) {
+            m_logListBox->Append(wxString::Format("Command Processing Error: %s", e.what()));
         }
     }
-}
 
-void MainFrame::OnClose(wxCloseEvent& event) {
-    // Cleanup resources
-    if (commandUpdateTimer) {
-        commandUpdateTimer->Stop();
-        delete commandUpdateTimer;
+    ~ServerWindow() {
+        // Clean up resources
+        if (m_api) delete m_api;
+        if (m_server) delete m_server;
+        if (m_sysInfo) delete m_sysInfo;
+        if (m_timer) delete m_timer;
     }
 
-    if (server) delete server;
-    if (gmailApi) delete gmailApi;
-    if (sysInfo) delete sysInfo;
+private:
+    wxTimer* m_timer = nullptr;
+};
 
-    event.Skip();  // Allow the window to close
-}
+class ServerApp : public wxApp {
+public:
+    bool OnInit() {
+        ServerWindow* window = new ServerWindow();
+        window->Show(true);
+        return true;
+    }
+};
 
-MainFrame::~MainFrame() {
-    // Additional cleanup if needed
-}
+wxIMPLEMENT_APP(ServerApp);
