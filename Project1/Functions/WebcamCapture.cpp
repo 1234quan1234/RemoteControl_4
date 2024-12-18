@@ -19,112 +19,6 @@ WebcamCapture::~WebcamCapture() {
     MFShutdown();
 }
 
-HRESULT WebcamCapture::GetUnconnectedPin(IBaseFilter* pFilter, PIN_DIRECTION direction, IPin** ppPin) {
-    std::cout << "[DEBUG] Looking for pin. Direction: "
-        << (direction == PINDIR_OUTPUT ? "output" : "input") << "\n";
-
-    if (!pFilter || !ppPin) {
-        std::cout << "[ERROR] Invalid filter/pin pointer\n";
-        return E_POINTER;
-    }
-
-    *ppPin = nullptr;
-    IEnumPins* pEnum = nullptr;
-    HRESULT hr = pFilter->EnumPins(&pEnum);
-
-    if (FAILED(hr) || !pEnum) {
-        std::cout << "[ERROR] EnumPins failed: " << hr << "\n";
-        return hr;
-    }
-
-    // Find unconnected pin with matching direction
-    IPin* pPin = nullptr;
-    while (pEnum->Next(1, &pPin, nullptr) == S_OK) {
-        PIN_DIRECTION pinDir;
-        hr = pPin->QueryDirection(&pinDir);
-
-        if (SUCCEEDED(hr) && pinDir == direction) {
-            // Check if pin is connected
-            IPin* pTmp = nullptr;
-            HRESULT hrConnect = pPin->ConnectedTo(&pTmp);
-
-            if (hrConnect == VFW_E_NOT_CONNECTED) {
-                // Found unconnected pin with matching direction
-                *ppPin = pPin;
-                pEnum->Release();
-                std::cout << "[DEBUG] Found unconnected "
-                    << (direction == PINDIR_OUTPUT ? "output" : "input")
-                    << " pin\n";
-                return S_OK;
-            }
-
-            if (pTmp) {
-                pTmp->Release();
-            }
-        }
-        pPin->Release();
-    }
-
-    pEnum->Release();
-    std::cout << "[DEBUG] No unconnected pins found for specified direction\n";
-    return E_FAIL;
-}
-
-HRESULT WebcamCapture::ConnectFilters(IGraphBuilder* pGraph, IBaseFilter* pSource, IBaseFilter* pDest) {
-    IPin* pOut = NULL, * pIn = NULL;
-    HRESULT hr = GetUnconnectedPin(pSource, PINDIR_OUTPUT, &pOut);
-    if (SUCCEEDED(hr)) {
-        hr = GetUnconnectedPin(pDest, PINDIR_INPUT, &pIn);
-        if (SUCCEEDED(hr)) {
-            hr = pGraph->Connect(pOut, pIn);
-            pIn->Release();
-        }
-        pOut->Release();
-    }
-    return hr;
-}
-
-// Helper function to get pin
-IPin* WebcamCapture::GetPin(IBaseFilter* pFilter, PIN_DIRECTION PinDir) {
-    IEnumPins* pEnum = NULL;
-    IPin* pPin = NULL;
-
-    if (FAILED(pFilter->EnumPins(&pEnum))) {
-        return NULL;
-    }
-
-    while (pEnum->Next(1, &pPin, NULL) == S_OK) {
-        PIN_DIRECTION PinDirThis;
-        pPin->QueryDirection(&PinDirThis);
-        if (PinDir == PinDirThis) {
-            pEnum->Release();
-            return pPin;
-        }
-        pPin->Release();
-    }
-    pEnum->Release();
-    return NULL;
-}
-
-void WebcamCapture::DeleteMediaType(AM_MEDIA_TYPE* pmt) {
-    if (pmt == NULL) {
-        return;
-    }
-
-    if (pmt->cbFormat != 0) {
-        CoTaskMemFree(pmt->pbFormat);
-        pmt->cbFormat = 0;
-        pmt->pbFormat = NULL;
-    }
-
-    if (pmt->pUnk != NULL) {
-        pmt->pUnk->Release();
-        pmt->pUnk = NULL;
-    }
-
-    CoTaskMemFree(pmt);
-}
-
 // Helper function to get encoder CLSID
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
     UINT num = 0;
@@ -337,7 +231,7 @@ bool WebcamCapture::captureImage(const char* filename) {
         LONGLONG timestamp;
 
         std::cout << "[DEBUG] Waiting for frame...\n";
-        
+
         // Try multiple times if needed
         for (int attempts = 0; attempts < 3 && !pSample; attempts++) {
             hr = pReader->ReadSample(
@@ -348,10 +242,10 @@ bool WebcamCapture::captureImage(const char* filename) {
                 &timestamp,      // Receives timestamp
                 &pSample);       // Receives sample
 
-            std::cout << "[DEBUG] ReadSample attempt " << attempts + 1 
-                     << " result: 0x" << std::hex << hr 
-                     << std::dec << ", Flags: " << flags
-                     << ", Sample: " << (pSample ? "Valid" : "NULL") << "\n";
+            std::cout << "[DEBUG] ReadSample attempt " << attempts + 1
+                << " result: 0x" << std::hex << hr
+                << std::dec << ", Flags: " << flags
+                << ", Sample: " << (pSample ? "Valid" : "NULL") << "\n";
 
             if (SUCCEEDED(hr) && pSample) break;
             Sleep(100);  // Wait before retry
@@ -457,133 +351,4 @@ bool WebcamCapture::captureImage(const char* filename) {
 
     MFShutdown();
     return success;
-}
-
-bool WebcamCapture::captureVideo(const char* filename) {
-    if (!filename) return false;
-    cout << "[DEBUG] Starting video capture...\n";
-
-    HRESULT hr = S_OK;
-    IMFSinkWriter* pSinkWriter = NULL;
-    IMFMediaSession* pSession = NULL;
-    IMFTopology* pTopology = NULL;
-    DWORD streamIndex = 0;
-    PROPVARIANT varStart;
-    PropVariantInit(&varStart);
-
-    try {
-        // Create media session for preview
-        hr = MFCreateMediaSession(NULL, &pSession);
-        if (FAILED(hr)) throw "Failed to create media session";
-
-        // Create attributes
-        hr = MFCreateAttributes(&pAttributes, 2);
-        if (FAILED(hr)) throw "Failed to create attributes";
-
-        hr = pAttributes->SetGUID(
-            MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE,
-            MF_DEVSOURCE_ATTRIBUTE_SOURCE_TYPE_VIDCAP_GUID);
-        
-        // Enumerate devices
-        IMFActivate** ppDevices = NULL;
-        UINT32 deviceCount = 0;
-        hr = MFEnumDeviceSources(pAttributes, &ppDevices, &deviceCount);
-        if (FAILED(hr) || deviceCount == 0) throw "No webcam found";
-
-        // Activate webcam
-        hr = ppDevices[0]->ActivateObject(IID_PPV_ARGS(&pSource));
-        if (FAILED(hr)) throw "Failed to activate webcam";
-
-        // Create preview topology
-        hr = MFCreateTopology(&pTopology);
-        if (FAILED(hr)) throw "Failed to create topology";
-
-        // Create EVR (Enhanced Video Renderer)
-        IMFActivate* pActivate = NULL;
-        hr = MFCreateVideoRendererActivate(GetDesktopWindow(), &pActivate);
-
-        // Add source and sink to topology
-        IMFTopologyNode* pSourceNode = NULL, * pOutputNode = NULL;
-        hr = MFCreateTopologyNode(MF_TOPOLOGY_SOURCESTREAM_NODE, &pSourceNode);
-        hr = MFCreateTopologyNode(MF_TOPOLOGY_OUTPUT_NODE, &pOutputNode);
-
-        // Configure source
-        hr = pSourceNode->SetUnknown(MF_TOPONODE_SOURCE, pSource);
-        hr = pOutputNode->SetObject(pActivate);
-
-        hr = pTopology->AddNode(pSourceNode);
-        hr = pTopology->AddNode(pOutputNode);
-        hr = pSourceNode->ConnectOutput(0, pOutputNode, 0);
-
-        // Start preview
-        hr = pSession->Start(&GUID_NULL, &varStart);
-        if (FAILED(hr)) throw "Failed to start preview";
-
-        // Create media type for recording
-        IMFMediaType* pVideoOutType = NULL;
-        hr = MFCreateMediaType(&pVideoOutType);
-        hr = pVideoOutType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Video);
-        hr = pVideoOutType->SetGUID(MF_MT_SUBTYPE, MFVideoFormat_H264);
-        hr = MFSetAttributeSize(pVideoOutType, MF_MT_FRAME_SIZE, 320, 240);
-        hr = MFSetAttributeRatio(pVideoOutType, MF_MT_FRAME_RATE, 15, 1);
-        hr = pVideoOutType->SetUINT32(MF_MT_AVG_BITRATE, 250000);
-
-        // Create sink writer
-        hr = MFCreateSinkWriterFromURL(
-            StringToWString(filename).c_str(),
-            NULL,
-            NULL,
-            &pSinkWriter);
-        if (FAILED(hr)) throw "Failed to create sink writer";
-
-        hr = pSinkWriter->AddStream(pVideoOutType, &streamIndex);
-        hr = pSinkWriter->BeginWriting();
-
-        // Record frames (15fps * 7 seconds = 105 frames)
-        LONGLONG rtStart = 0;
-        for (int i = 0; i < 105; i++) {
-            IMFSample* pSample = NULL;
-            DWORD flags = 0;
-            hr = pReader->ReadSample(
-                MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-                0,
-                NULL,
-                &flags,
-                NULL,
-                &pSample);
-
-            if (SUCCEEDED(hr) && pSample) {
-                pSample->SetSampleTime(rtStart);
-                rtStart += 666666; // 1/15 second
-                hr = pSinkWriter->WriteSample(streamIndex, pSample);
-                pSample->Release();
-            }
-        }
-
-        // Cleanup
-        hr = pSinkWriter->Finalize();
-        hr = pSession->Stop();
-
-        PropVariantClear(&varStart);
-        if (pSession) pSession->Release();
-        if (pTopology) pTopology->Release();
-        if (pSinkWriter) pSinkWriter->Release();
-        if (pVideoOutType) pVideoOutType->Release();
-        if (pSourceNode) pSourceNode->Release();
-        if (pOutputNode) pOutputNode->Release();
-        if (pActivate) pActivate->Release();
-
-        return true;
-    }
-    catch (const char* error) {
-        cout << "Error: " << error << endl;
-        return false;
-    }
-}
-
-// Helper function to convert string to wstring
-std::wstring StringToWString(const std::string& str) {
-    std::wstring wstr(str.length(), L' ');
-    std::copy(str.begin(), str.end(), wstr.begin());
-    return wstr;
 }

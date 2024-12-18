@@ -41,16 +41,11 @@ public:
     ~WebcamCapture();
 
     bool captureImage(const char* filename);
-	bool captureVideo(const char* filename);
 
 private:
     IMFSourceReader* pReader;
     IMFMediaSource* pSource;
     IMFAttributes* pAttributes;
     IMFMediaType* pMediaType;
-    HRESULT GetUnconnectedPin(IBaseFilter* pFilter, PIN_DIRECTION direction, IPin** ppPin);
-    HRESULT ConnectFilters(IGraphBuilder* pGraph, IBaseFilter* pSource, IBaseFilter* pDest);
-    IPin *GetPin(IBaseFilter* pFilter, PIN_DIRECTION PinDir);
-    void DeleteMediaType(AM_MEDIA_TYPE* pmt);
     wstring StringToWString(const string& str);
 };

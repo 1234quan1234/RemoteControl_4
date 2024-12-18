@@ -147,10 +147,6 @@ void ServerManager::handleCommand(const Json::Value& command) {
             handleCaptureWebcam(command);
             return;
         }
-        else if (commandStr == "recordWebcam") {
-            handleRecordWebcam(command);
-            return;
-        }
         else if (commandStr == "trackKeyboard") {
             handleTrackKeyboard(command);
             return;
@@ -326,38 +322,6 @@ void ServerManager::handleCaptureWebcam(const Json::Value& command) {
     else {
         cout << "Failed to send webcam capture via email" << endl;
     }
-}
-
-void ServerManager::handleRecordWebcam(const Json::Value& command) {
-    // Create WebcamCapture instance
-    WebcamCapture webcamCapture;
-
-    // Get sender's email
-    string senderEmail = command["From"].asString();
-    cout << "Sender email: " << senderEmail << endl;
-
-    // Create filename with timestamp
-    string filename = "D:\\webcam_record_" + to_string(time(nullptr)) + ".mp4";
-
-    // Record video
-    if (webcamCapture.captureVideo(filename.c_str())) {
-        cout << "Video recording successful!" << endl;
-        
-        // Send email with video attachment
-        string subject = "Webcam Recording";
-        string body = "Here's your webcam recording!";
-
-        if (gmail.sendEmail(senderEmail, subject, body, filename)) {
-            cout << "Video recording sent successfully via email" << endl;
-        }
-        else {
-            cout << "Failed to send video recording via email" << endl;
-        }
-    }
-    else {
-        cout << "Video recording failed!" << endl;
-    }
-
 }
 
 void ServerManager::handleCaptureScreen(const Json::Value& command) {
