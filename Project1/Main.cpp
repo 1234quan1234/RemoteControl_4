@@ -130,7 +130,17 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     // Authentication URL with Hyperlink
     wxStaticText* instructLabel = new wxStaticText(panel, wxID_ANY,
         "To authenticate, please follow these steps:");
+	wxStaticText* step1Label = new wxStaticText(panel, wxID_ANY,
+		"1. Click the link below to open the authorization page in your browser.");
+	wxStaticText* step2Label = new wxStaticText(panel, wxID_ANY,
+		"2. Copy the authorization code from the browser and paste it in the box below.");
+	wxStaticText* step3Label = new wxStaticText(panel, wxID_ANY,
+		"3. Click Authenticate to complete the process.");
+
     mainSizer->Add(instructLabel, 0, wxALL | wxCENTER, 10);
+	mainSizer->Add(step1Label, 0, wxALL | wxCENTER, 10);
+	mainSizer->Add(step2Label, 0, wxALL | wxCENTER, 10);
+	mainSizer->Add(step3Label, 0, wxALL | wxCENTER, 10);
 
     wxBoxSizer* urlSizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* urlTextLabel = new wxStaticText(panel, wxID_ANY, "Authorization URL: ");
