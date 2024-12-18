@@ -270,11 +270,14 @@ void ServerMonitorFrame::UpdateCommandInfo() {
             m_currentCommandLabel->SetLabel("Access Request");
             m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
             string fromEmail = m_server.currentCommand.from;
+
+            // Find existing access entry for this email
             auto it = find_if(m_server.approvedAccess.begin(), m_server.approvedAccess.end(),
                 [&fromEmail](const AccessInfo& access) {
                     return access.email == fromEmail;
                 });
 
+            // If access exists and is still valid
             if (it != m_server.approvedAccess.end() && m_server.isAccessValid(*it)) {
                 // Calculate remaining time
                 time_t now = time(nullptr);
@@ -287,14 +290,27 @@ void ServerMonitorFrame::UpdateCommandInfo() {
                 char timeStr[80];
                 strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
+                // Send email and update UI
                 m_server.gmail.sendSimpleEmail(fromEmail, "Access Info",
                     "You already have access.\nExpires at: " + string(timeStr) +
                     "\nHours remaining: " + to_string(static_cast<int>(hoursLeft)));
-                m_server.currentCommand.message = "You already have access.\nExpires at: " + string(timeStr) +
-                    "\nHours remaining: " + to_string(static_cast<int>(hoursLeft));
-                m_commandMessageLabel->SetLabel(m_server.currentCommand.message);
+
+                // Update UI labels
+                m_currentCommandLabel->SetLabel("Access Already Granted");
+                m_commandFromLabel->SetLabel(wxString::Format("From: %s", fromEmail));
+                m_commandMessageLabel->SetLabel(
+                    wxString::Format("Access Already Granted. Expires at: %s\nHours Remaining: %d",
+                        timeStr, static_cast<int>(hoursLeft))
+                );
+
+                // Clear the current command
+                m_server.currentCommand.content.clear();
+
+                // Return to prevent further processing
                 return;
             }
+
+            // If no existing valid access, proceed with access request
             if (m_accessRequesting) return;
             wxCommandEvent accessRequestEvent(CUSTOM_ACCESS_REQUEST_EVENT);
             QueueEvent(accessRequestEvent.Clone());
@@ -306,6 +322,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
         }
     }
 
+    // Rest of the existing blinking logic remains the same
     if (m_blinkCounter < m_maxBlinkCount) {
         if (m_server.currentCommand.content.empty()) {
             wxString waitingText = "Waiting for command";
@@ -328,7 +345,6 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
     int result = dialog.ShowModal();
 
     if (result == wxID_YES) {
-        // Similar logic to the console version
         AccessInfo access;
         access.email = m_server.currentCommand.from;
         access.grantedTime = time(nullptr);
@@ -344,19 +360,19 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
         m_server.gmail.sendSimpleEmail(access.email, "Access Granted",
             "Access granted for 24 hours.\nExpires at: " + std::string(timeStr));
 
-        //m_currentCommandLabel->SetLabel("Access Granted");
-        //m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));
-        m_commandMessageLabel->SetLabel("Access granted for 24 hours");
-        wxMilliSleep(5000);
+        // Explicitly update labels
+        m_currentCommandLabel->SetLabel("Access Granted");
+        m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));
+        m_commandMessageLabel->SetLabel(wxString::Format("Access granted until: %s", timeStr));
     }
     else {
         m_server.gmail.sendSimpleEmail(m_server.currentCommand.from, "Access Denied",
             "Your access request was denied.");
 
-        //m_currentCommandLabel->SetLabel("Access Request");
-        //m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));
-        m_commandMessageLabel->SetLabel("Access request denied");
-		wxMilliSleep(5000);
+        // Explicitly update labels
+        m_currentCommandLabel->SetLabel("Access Denied");
+        m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));
+        m_commandMessageLabel->SetLabel("Access request was denied");
     }
 
     // Clear the current command after processing
