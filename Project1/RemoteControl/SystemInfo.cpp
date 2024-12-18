@@ -34,11 +34,11 @@ void SystemInfo::getSystemInfo() {
     }
 }
 
-void SystemInfo::display() const {
-    cout << "=== System Information ===" << endl;
-    cout << "Hostname: " << hostname << endl;
-    cout << "Local IP: " << localIP << endl;
-}
+//void SystemInfo::display() const {
+//    cout << "=== System Information ===" << endl;
+//    cout << "Hostname: " << hostname << endl;
+//    cout << "Local IP: " << localIP << endl;
+//}
 
 void SystemInfo::waitForInput() const {
     cout << "\nPress Enter to continue...";

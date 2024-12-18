@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -45,7 +45,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>false</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -74,7 +74,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\GIGABYTE\Downloads\curl-8.10.1_3-win64-mingw\curl-8.10.1_3-win64-mingw\include;C:\openssl-3.3.2\build\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\vcpkg\packages\curl_x64-windows\include;C:\vcpkg\packages\openssl_x64-windows\include;C:\vcpkg\packages\zlib_x64-windows\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
@@ -91,13 +91,17 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\curl-8.10.1\x32 Debug\libcurl-vc17-x86-debug-static-ipv6-sspi-schannel\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>$(WXWIN)\include;$(WXWIN)\include\msvc</AdditionalIncludeDirectories>
+      <LanguageStandard>
+      </LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;C:\curl-8.10.1\x32 Debug\libcurl-vc17-x86-debug-static-ipv6-sspi-schannel\lib\libcurl_a_debug.lib</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -108,14 +112,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\curl-8.10.1\x32 Release\libcurl-vc17-x86-release-static-ipv6-sspi-schannel\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WXWIN)\include;$(WXWIN)\include\msvc</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>libcrypto.lib;libssl.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;C:\curl-8.10.1\x32 Release\libcurl-vc17-x86-release-static-ipv6-sspi-schannel\lib\libcurl_a.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -126,7 +131,7 @@
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(WXWIN)\include\msvc;$(WXWIN)\include;C:\vcpkg\packages\zlib_x64-windows-static\include;C:\vcpkg\packages\jsoncpp_x64-windows-static\include;C:\openssl-3.3.2\build\bin;C:\vcpkg\packages\curl_x64-windows-static\include;C:\openssl-3.3.2\build\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp14</LanguageStandard>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -147,14 +152,18 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>CURL_STATICLIB;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\vcpkg\packages\zlib_x64-windows-static\include;C:\vcpkg\packages\jsoncpp_x64-windows-static\include;C:\vcpkg\packages\curl_x64-windows-static\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WXWIN)\include;$(WXWIN)\include\msvc</AdditionalIncludeDirectories>
+      <LanguageStandard>
+      </LanguageStandard>
     </ClCompile>
     <Link>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>gdi32.lib;user32.lib;libcrypto.lib;libssl.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;libcurl.lib;strmiids.lib;format.lib;C:\vcpkg\packages\jsoncpp_x64-windows-static\lib\jsoncpp.lib;C:\vcpkg\packages\zlib_x64-windows-static\lib\zlib.lib</AdditionalDependencies>
+      <AdditionalDependencies>gdi32.lib;user32.lib;libcrypto.lib;libssl.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;strmiids.lib;ole32.lib;C:\vcpkg\packages\curl_x64-windows\debug\lib\libcurl-d.lib;C:\vcpkg\packages\jsoncpp_x64-windows\debug\lib\jsoncpp.lib;C:\vcpkg\packages\zlib_x64-windows\debug\lib\zlibd.lib;libcurl.lib;strmiids.lib;format.lib;C:\vcpkg\packages\jsoncpp_x64-windows-static\lib\jsoncpp.lib;C:\vcpkg\packages\zlib_x64-windows-static\lib\zlib.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_x64_lib</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>gdiplus.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -196,6 +205,9 @@
     <ClInclude Include="Server\Config.h" />
     <ClInclude Include="Server\EmailMonitor.h" />
     <ClInclude Include="Server\ServerManager.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ClientSecrets.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

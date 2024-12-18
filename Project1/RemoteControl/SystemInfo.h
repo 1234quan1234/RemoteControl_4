@@ -3,16 +3,13 @@
 
 class SystemInfo {
 private:
-    string hostname;
-    
     void initializeWinsock();
-    
 
 public:
+    string hostname;
     string localIP;
     SystemInfo();
     ~SystemInfo();
     void getSystemInfo();
-    void display() const;
     void waitForInput() const;
 };

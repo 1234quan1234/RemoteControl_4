@@ -1,26 +1,37 @@
 ﻿#include "..\Libs\Header.h"
 #include "..\GmailAPI\GmailAPI.h"
 
-GmailAPI::GmailAPI(const std::string& client_id, const std::string& client_secret,
-    const std::string& redirect_uri)
+GmailAPI::GmailAPI(const std::string& client_id, const std::string& client_secret, const std::string& redirect_uri)
     : curl(new MyCurlWrapper(3)),
     tokenManager(new MyTokenManager(client_id, client_secret, redirect_uri)),
     emailFetcher(*curl, *tokenManager),
     scope("https://www.googleapis.com/auth/gmail.modify") {
-    cout << "Initializing GmailAPI..." << endl;
-}
+};
 
 GmailAPI::~GmailAPI() {
     delete curl;
     delete tokenManager;
+};
+
+string GmailAPI::getServerName() {
+	return emailFetcher.getMyEmail();
 }
 
 Json::Value GmailAPI::ReadClientSecrets(const string& path) {
-    cout << "Reading client secrets from: " << path << endl;
-    ifstream file(path);
+
+    // Mother folder directory
+    char buffer[100];
+    GetCurrentDirectoryA(100, buffer);
+
+    // Buffer to string
+    std::string fix_path(buffer);
+    fix_path += path; 
+
+    ifstream file(fix_path);
     if (!file.is_open()) {
-        throw runtime_error("Cannot open client secrets file: " + path);
+        throw runtime_error("Cannot open client secrets file: " + fix_path);
     }
+    cout << "Reading client secrets from: " << fix_path << endl;
 
     Json::Value root;
     Json::CharReaderBuilder reader;
@@ -36,7 +47,7 @@ Json::Value GmailAPI::ReadClientSecrets(const string& path) {
         !root["installed"].isMember("redirect_uris")) {
         throw runtime_error("Invalid client secrets format");
     }
-
+    
     return root;
 }
 
