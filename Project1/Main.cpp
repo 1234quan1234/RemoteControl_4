@@ -281,14 +281,13 @@ void ServerMonitorFrame::UpdateCommandInfo() {
             m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
             string fromEmail = m_server.currentCommand.from;
 
-            // Find existing access entry for this email
-            auto it = find_if(m_server.approvedAccess.begin(), m_server.approvedAccess.end(),
-                [&fromEmail](const AccessInfo& access) {
-                    return access.email == fromEmail;
-                });
+			// Find if fromEmail already in approvedAccess.email
+            m_server.loadAccessList();
+			auto it = find_if(m_server.approvedAccess.begin(), m_server.approvedAccess.end(),
+				[&fromEmail](const AccessInfo& access) { return access.email == fromEmail; });
 
             // If access exists and is still valid
-            if (it != m_server.approvedAccess.end() && m_server.isAccessValid(*it)) {
+			if (it != m_server.approvedAccess.end() && m_server.isAccessValid(*it)) {
                 // Calculate remaining time
                 time_t now = time(nullptr);
                 time_t expiryTime = it->grantedTime + (AccessInfo::VALIDITY_HOURS * 3600);
