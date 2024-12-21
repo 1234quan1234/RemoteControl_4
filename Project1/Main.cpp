@@ -13,9 +13,15 @@ private:
     wxTextCtrl* m_authCodeCtrl;
     GmailAPI& m_api;
     wxHyperlinkCtrl* m_authUrlLink;
+    wxButton* m_manualAuthBtn;
+    wxButton* m_autoAuthBtn;
+    wxPanel* m_manualAuthPanel;
 
-    void OnAuthenticate(wxCommandEvent& event);
-    void OnCopyURL(wxHyperlinkEvent& event);
+    void OnAuthenticate(wxCommandEvent& event);        // Event handler for manual authentication
+    void OnCopyURL(wxHyperlinkEvent& event);          // Event handler for URL copying
+    void OnAutoAuthenticate(wxCommandEvent& event);    // Event handler for automatic authentication
+    void OnManualAuthenticate(wxCommandEvent& event);  // Event handler for showing manual controls
+    void ShowManualAuthControls(bool show);           // Helper method to show/hide manual controls
 
 public:
     AuthenticationFrame(GmailAPI& api);
@@ -121,38 +127,50 @@ int AccessRequestDialog::ShowModal() {
 // Authentication Frame Implementation
 AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control - Authentication",
-        wxDefaultPosition, wxSize(500, 250)),
+        wxDefaultPosition, wxSize(500, 300)),
     m_api(api) {
 
     wxPanel* panel = new wxPanel(this, wxID_ANY);
     wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
-    // Authentication URL with Hyperlink
-    wxStaticText* instructLabel = new wxStaticText(panel, wxID_ANY,
-        "To authenticate, please follow these steps:");
-	wxStaticText* step1Label = new wxStaticText(panel, wxID_ANY,
-		"1. Click the link below to open the authorization page in your browser.");
-	wxStaticText* step2Label = new wxStaticText(panel, wxID_ANY,
-		"2. Copy the authorization code from the browser and paste it in the box below.");
-	wxStaticText* step3Label = new wxStaticText(panel, wxID_ANY,
-		"3. Click Authenticate to complete the process.");
+    // Add authentication choice buttons at the top
+    wxBoxSizer* choiceSizer = new wxBoxSizer(wxHORIZONTAL);
+    m_autoAuthBtn = new wxButton(panel, wxID_ANY, "Automatic Authentication");
+    m_manualAuthBtn = new wxButton(panel, wxID_ANY, "Manual Authentication");
+    choiceSizer->Add(m_autoAuthBtn, 1, wxALL | wxEXPAND, 5);
+    choiceSizer->Add(m_manualAuthBtn, 1, wxALL | wxEXPAND, 5);
+    mainSizer->Add(choiceSizer, 0, wxALL | wxEXPAND, 10);
 
-    mainSizer->Add(instructLabel, 0, wxALL | wxCENTER, 10);
-	mainSizer->Add(step1Label, 0, wxALL | wxCENTER, 10);
-	mainSizer->Add(step2Label, 0, wxALL | wxCENTER, 10);
-	mainSizer->Add(step3Label, 0, wxALL | wxCENTER, 10);
+    // Manual authentication panel
+    m_manualAuthPanel = new wxPanel(panel, wxID_ANY);
+    wxBoxSizer* manualSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Authentication URL with Hyperlink
+    wxStaticText* instructLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY,
+        "To authenticate, please follow these steps:");
+    wxStaticText* step1Label = new wxStaticText(m_manualAuthPanel, wxID_ANY,
+        "1. Click the link below to open the authorization page in your browser.");
+    wxStaticText* step2Label = new wxStaticText(m_manualAuthPanel, wxID_ANY,
+        "2. Copy the authorization code from the browser and paste it in the box below.");
+    wxStaticText* step3Label = new wxStaticText(m_manualAuthPanel, wxID_ANY,
+        "3. Click Authenticate to complete the process.");
+
+    manualSizer->Add(instructLabel, 0, wxALL | wxCENTER, 10);
+    manualSizer->Add(step1Label, 0, wxALL | wxCENTER, 10);
+    manualSizer->Add(step2Label, 0, wxALL | wxCENTER, 10);
+    manualSizer->Add(step3Label, 0, wxALL | wxCENTER, 10);
 
     wxBoxSizer* urlSizer = new wxBoxSizer(wxHORIZONTAL);
-    wxStaticText* urlTextLabel = new wxStaticText(panel, wxID_ANY, "Authorization URL: ");
-    m_authUrlLink = new wxHyperlinkCtrl(panel, wxID_ANY,
+    wxStaticText* urlTextLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Authorization URL: ");
+    m_authUrlLink = new wxHyperlinkCtrl(m_manualAuthPanel, wxID_ANY,
         m_api.getAuthorizationUrl(), m_api.getAuthorizationUrl());
 
     urlSizer->Add(urlTextLabel, 0, wxALIGN_CENTER_VERTICAL);
     urlSizer->Add(m_authUrlLink, 0, wxALIGN_CENTER_VERTICAL);
-    mainSizer->Add(urlSizer, 0, wxALL | wxCENTER, 10);
+    manualSizer->Add(urlSizer, 0, wxALL | wxCENTER, 10);
 
     // Copy URL Button
-    wxButton* copyUrlBtn = new wxButton(panel, wxID_ANY, "Copy URL");
+    wxButton* copyUrlBtn = new wxButton(m_manualAuthPanel, wxID_ANY, "Copy URL");
     copyUrlBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         if (wxTheClipboard->Open()) {
             wxTheClipboard->SetData(new wxTextDataObject(m_api.getAuthorizationUrl()));
@@ -160,25 +178,39 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
             wxMessageBox("URL copied to clipboard!", "Copied", wxOK | wxICON_INFORMATION);
         }
         });
-    mainSizer->Add(copyUrlBtn, 0, wxALL | wxCENTER, 10);
+    manualSizer->Add(copyUrlBtn, 0, wxALL | wxCENTER, 10);
 
     // Authorization Code Input
     wxBoxSizer* authSizer = new wxBoxSizer(wxHORIZONTAL);
-    wxStaticText* authLabel = new wxStaticText(panel, wxID_ANY, "Enter Authorization Code:");
-    m_authCodeCtrl = new wxTextCtrl(panel, wxID_ANY);
+    wxStaticText* authLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Enter Authorization Code:");
+    m_authCodeCtrl = new wxTextCtrl(m_manualAuthPanel, wxID_ANY);
 
-    wxButton* authenticateBtn = new wxButton(panel, wxID_ANY, "Authenticate");
+    wxButton* authenticateBtn = new wxButton(m_manualAuthPanel, wxID_ANY, "Authenticate");
     authenticateBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAuthenticate, this);
 
     authSizer->Add(authLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
     authSizer->Add(m_authCodeCtrl, 1, wxALIGN_CENTER_VERTICAL);
     authSizer->Add(authenticateBtn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 10);
 
-    mainSizer->Add(authSizer, 0, wxALL | wxEXPAND, 10);
+    manualSizer->Add(authSizer, 0, wxALL | wxEXPAND, 10);
+    m_manualAuthPanel->SetSizer(manualSizer);
 
+    mainSizer->Add(m_manualAuthPanel, 1, wxEXPAND);
     panel->SetSizer(mainSizer);
-    mainSizer->Fit(this);
+
+    // Bind events for authentication choice buttons
+    m_autoAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAutoAuthenticate, this);
+    m_manualAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnManualAuthenticate, this);
+
+    // Initially hide manual authentication controls
+    ShowManualAuthControls(false);
+
     Center();
+}
+
+void AuthenticationFrame::ShowManualAuthControls(bool show) {
+    m_manualAuthPanel->Show(show);
+    Layout();
 }
 
 void AuthenticationFrame::OnAuthenticate(wxCommandEvent& event) {
@@ -198,8 +230,47 @@ void AuthenticationFrame::OnAuthenticate(wxCommandEvent& event) {
     catch (const std::exception& e) {
         wxMessageBox(wxString::Format("Authentication Failed: %s", e.what()),
             "Error", wxOK | wxICON_ERROR);
+        ShowManualAuthControls(true); // Show manual controls in case of error
     }
 }
+
+void AuthenticationFrame::OnAutoAuthenticate(wxCommandEvent& event) {
+    wxBusyCursor wait;
+    m_autoAuthBtn->Disable();
+    m_manualAuthBtn->Disable();
+
+    try {
+        if (m_api.authenticateAutomatically()) {
+            // Create and show ServerMonitorFrame
+            SystemInfo* sysInfo = new SystemInfo();
+            ServerManager* server = new ServerManager(m_api);
+
+            ServerMonitorFrame* monitorFrame = new ServerMonitorFrame(m_api, *server, *sysInfo);
+            monitorFrame->Show(true);
+
+            // Close authentication frame
+            Close();
+        }
+        else {
+            wxMessageBox("Automatic authentication failed. Please try manual authentication.",
+                "Authentication Failed", wxOK | wxICON_ERROR);
+            ShowManualAuthControls(true);
+        }
+    }
+    catch (const std::exception& e) {
+        wxMessageBox(wxString::Format("Authentication Failed: %s\nPlease try manual authentication.", e.what()),
+            "Error", wxOK | wxICON_ERROR);
+        ShowManualAuthControls(true);
+    }
+
+    m_autoAuthBtn->Enable();
+    m_manualAuthBtn->Enable();
+}
+
+void AuthenticationFrame::OnManualAuthenticate(wxCommandEvent& event) {
+    ShowManualAuthControls(true);
+}
+
 
 // Event table for ServerMonitorFrame
 wxBEGIN_EVENT_TABLE(ServerMonitorFrame, wxFrame)
@@ -316,7 +387,6 @@ void ServerMonitorFrame::UpdateCommandInfo() {
 				m_blinkCounter = 0;
 				m_accessRequesting = false;
                 
-                // Return to prevent further processing
                 return;
             }
 
@@ -416,7 +486,7 @@ bool RemoteControlApp::OnInit() {
     m_api = new GmailAPI(
         secrets["installed"]["client_id"].asString(),
         secrets["installed"]["client_secret"].asString(),
-        secrets["installed"]["redirect_uris"][0].asString()
+        "http://localhost:8080"  // Update redirect URI for automatic authentication
     );
 
     // Try to load saved tokens
