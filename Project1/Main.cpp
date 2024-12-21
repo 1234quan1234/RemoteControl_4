@@ -242,7 +242,7 @@ ServerMonitorFrame::ServerMonitorFrame(GmailAPI& api, ServerManager& server, Sys
 
     // Left side - Current Command
     wxStaticBoxSizer* leftSizer = new wxStaticBoxSizer(wxVERTICAL, panel, "Current Command");
-    m_currentCommandLabel = new wxStaticText(panel, wxID_ANY, "Waiting for command...");
+    m_currentCommandLabel = new wxStaticText(panel, wxID_ANY, "Waiting for command");
     leftSizer->Add(m_currentCommandLabel, 0, wxALL | wxEXPAND, 5);
     commandSizer->Add(leftSizer, 1, wxEXPAND | wxRIGHT, 5);
 
@@ -278,6 +278,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
     if (!m_server.currentCommand.content.empty()) {
 		if (m_server.currentCommand.content == "requestAccess") {
             // Trigger custom event for access request
+            m_accessRequesting = true;
             m_currentCommandLabel->SetLabel("Access Request");
             m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
             string fromEmail = m_server.currentCommand.from;
@@ -314,7 +315,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
                 m_server.currentCommand.content.clear();
 				m_blinkCounter = 0;
 				m_accessRequesting = false;
-
+                
                 // Return to prevent further processing
                 return;
             }
@@ -331,16 +332,14 @@ void ServerMonitorFrame::UpdateCommandInfo() {
         }
     }
 
-    // Rest of the existing blinking logic remains the same
     if (m_blinkCounter < m_maxBlinkCount) {
         if (m_server.currentCommand.content.empty()) {
             wxString waitingText = "Waiting for command";
-            for (int i = 0; i <= m_blinkCounter % 4; i++) {
-                waitingText += ".";
-            }
-            if (waitingText.length() > 24) {
-                waitingText = "Waiting for command";
-            }
+            
+			for (int i = 0; i <= m_blinkCounter % 5; i++) {
+				waitingText += ".";
+			}
+
             m_currentCommandLabel->SetLabel(waitingText);
             m_commandFromLabel->SetLabel("");
             m_commandMessageLabel->SetLabel("");
