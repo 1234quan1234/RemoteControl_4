@@ -1,8 +1,10 @@
-﻿#include <wx/wx.h>
+﻿
+#include <wx/wx.h>
 #include <wx/hyperlink.h>
 #include <wx/clipbrd.h>
 #include "Server/ServerManager.h"
 #include "RemoteControl/SystemInfo.h"
+
 
 // Add new custom event for access request
 wxDECLARE_EVENT(CUSTOM_ACCESS_REQUEST_EVENT, wxCommandEvent);
@@ -72,6 +74,11 @@ private:
 
 public:
     virtual bool OnInit();
+    ~RemoteControlApp() {
+        delete m_api;
+        delete m_sysInfo;
+        delete m_server;
+    }
 };
 
 // Access Request Dialog Implementation
@@ -324,6 +331,10 @@ void ServerMonitorFrame::UpdateCommandInfo() {
 }
 
 void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
+    if (m_accessRequesting) return;  // Prevent multiple dialogs
+
+    m_updateTimer->Stop();  // Stop timer during dialog
+
     AccessRequestDialog dialog(this, m_server.currentCommand.from, m_accessRequesting);
     int result = dialog.ShowModal();
 
@@ -361,6 +372,7 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
 
     // Clear the current command after processing
     m_server.currentCommand.content.clear();
+    m_updateTimer->Start();  // Restart timer
 }
 
 void ServerMonitorFrame::OnUpdateTimer(wxTimerEvent& event) {
@@ -376,39 +388,53 @@ ServerMonitorFrame::~ServerMonitorFrame() {
 
 // App Initialization
 bool RemoteControlApp::OnInit() {
-    // Read client secrets
-    auto secrets = GmailAPI::ReadClientSecrets("\\Resources\\ClientSecrets.json");
-    m_api = new GmailAPI(
-        secrets["installed"]["client_id"].asString(),
-        secrets["installed"]["client_secret"].asString(),
-        secrets["installed"]["redirect_uris"][0].asString()
-    );
-
-    // Try to load saved tokens
     try {
-        m_api->loadSavedTokens();
-
-        // If valid tokens exist, go directly to Server Monitor
-        if (m_api->hasValidToken()) {
-            m_sysInfo = new SystemInfo();
-            m_server = new ServerManager(*m_api);
-
-            ServerMonitorFrame* monitorFrame = new ServerMonitorFrame(*m_api, *m_server, *m_sysInfo);
-            monitorFrame->Show(true);
+        // Read client secrets with error checking
+        auto secrets = GmailAPI::ReadClientSecrets("C:\\Users\\GIGABYTE\\Downloads\\Client3.json");
+        if (secrets.empty()) {
+            throw std::runtime_error("Failed to read client secrets");
         }
-        else {
-            // If no valid tokens, show Authentication frame
-            AuthenticationFrame* authFrame = new AuthenticationFrame(*m_api);
-            authFrame->Show(true);
+
+        // Create API with smart pointer
+        m_api = new GmailAPI(
+            secrets["installed"]["client_id"].asString(),
+            secrets["installed"]["client_secret"].asString(),
+            secrets["installed"]["redirect_uris"][0].asString()
+        );
+
+        try {
+            m_api->loadSavedTokens();
+
+            if (m_api->hasValidToken()) {
+                m_sysInfo = new SystemInfo();
+                m_server = new ServerManager(*m_api);
+
+                auto monitorFrame = new ServerMonitorFrame(*m_api, *m_server, *m_sysInfo);
+                if (!monitorFrame->Show()) {
+                    throw std::runtime_error("Failed to show monitor frame");
+                }
+            }
+            else {
+                auto authFrame = new AuthenticationFrame(*m_api);
+                if (!authFrame->Show()) {
+                    throw std::runtime_error("Failed to show auth frame");
+                }
+            }
         }
+        catch (const std::exception& e) {
+            wxLogError("Token error: %s", e.what());
+            auto authFrame = new AuthenticationFrame(*m_api);
+            if (!authFrame->Show()) {
+                throw std::runtime_error("Failed to show auth frame");
+            }
+        }
+
+        return true;
     }
     catch (const std::exception& e) {
-        // If any error in loading tokens, show Authentication frame
-        AuthenticationFrame* authFrame = new AuthenticationFrame(*m_api);
-        authFrame->Show(true);
+        wxMessageBox(e.what(), "Error", wxICON_ERROR | wxOK);
+        return false;
     }
-
-    return true;
 }
 
 // Implement the wxWidgets application

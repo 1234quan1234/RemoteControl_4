@@ -37,7 +37,10 @@ public:
     bool isRunning() const;
     void processCommands();
     void handleCommand(const Json::Value& command); // Move to public
+
     void handleProcessListCommand(const Json::Value& command);
+	void handleStartProcess(const Json::Value& command);
+    void handleEndProcess(const Json::Value& command);
 
 	void handleReadRecentEmailsCommand(const Json::Value& command);
 
@@ -48,15 +51,17 @@ public:
 	void handleTrackKeyboard(const Json::Value& command);
 
 	void handleListService(const Json::Value& command);
+	void handleStartService(const Json::Value& command);
+    void handleEndService(const Json::Value& command);
 
 	void handleListFile(const Json::Value& command);
 
     void handlePowerCommand(const Json::Value& command);
-    void handleScreenshotCommand(const Json::Value& command);
-	void handleSystemInfoCommand(const Json::Value& command);
-    void handleShutdownCommand(const Json::Value& command);
 
-    void handleRequestAccess(const Json::Value& command);
+	
+
+	
+
 	string getServerName();
 	currentCommand currentCommand;
 };

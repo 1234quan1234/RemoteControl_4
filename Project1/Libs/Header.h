@@ -1,5 +1,4 @@
 #pragma once
-#pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "ws2_32.lib")
@@ -88,3 +87,5 @@ using namespace std;
 #include <powrprof.h> 
 
 #include <Guiddef.h>
+
+#include <ShlObj.h>

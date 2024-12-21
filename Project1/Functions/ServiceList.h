@@ -6,8 +6,8 @@ public:
     ServiceList();
     ~ServiceList();
     bool writeServicesToFile(const std::string& filename);
-    bool startService(const wchar_t* serviceName);
-    bool stopService(const wchar_t* serviceName);
+    bool startService(const vector<string>& serviceNames, const string& logFileName);
+    bool stopService(const vector<string>& serviceNames, const string& logFileName);
 
 private:
     SC_HANDLE schSCManager;

