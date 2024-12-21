@@ -219,7 +219,7 @@ std::string GmailAPI::waitForAuthCode() {
         "</head>\r\n"
         "<body>\r\n"
         "    <div class=\"container\">\r\n"
-        "        <div class=\"success-icon\">&#x2705;</div> <!-- HTML entity for a green check mark -->\r\n"
+        "        <div class=\"success-icon\">&#x2705;</div>\r\n"
         "        <h1>Authorization Successful!</h1>\r\n"
         "        <p>Your account has been successfully connected.</p>\r\n"
         "        <p>You can now close this window and return to the application.</p>\r\n"

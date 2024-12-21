@@ -76,7 +76,6 @@ using namespace std;
 #include <mfreadwrite.h>
 #include <shlwapi.h>
 
-#include <filesystem>
 
 #include <winsvc.h>
 
