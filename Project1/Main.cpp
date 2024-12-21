@@ -4,6 +4,41 @@
 #include "Server/ServerManager.h"
 #include "RemoteControl/SystemInfo.h"
 
+
+// Add these constants at the top of your file
+namespace UIColors {
+    const wxColour PRIMARY(0, 87, 183);           // HCMUS Blue
+    const wxColour SECONDARY(255, 255, 255);      // White
+    const wxColour ACCENT(241, 196, 15);          // Gold
+    const wxColour BACKGROUND(245, 245, 245);     // Light Gray
+    const wxColour TEXT(51, 51, 51);              // Dark Gray
+}
+
+// Add this helper function for styled buttons
+wxButton* styledButton(wxWindow* parent, wxWindowID id, const wxString& label) {
+    wxButton* button = new wxButton(parent, id, label);
+    button->SetBackgroundColour(UIColors::PRIMARY);
+    button->SetForegroundColour(UIColors::SECONDARY);
+    button->SetMinSize(wxSize(120, 35));  // Consistent button size
+
+    // Bind hover events for interactive effect
+    button->Bind(wxEVT_ENTER_WINDOW, [](wxMouseEvent& evt) {
+        wxButton* btn = (wxButton*)evt.GetEventObject();
+        btn->SetBackgroundColour(UIColors::ACCENT);
+        btn->Refresh();
+        evt.Skip();
+        });
+
+    button->Bind(wxEVT_LEAVE_WINDOW, [](wxMouseEvent& evt) {
+        wxButton* btn = (wxButton*)evt.GetEventObject();
+        btn->SetBackgroundColour(UIColors::PRIMARY);
+        btn->Refresh();
+        evt.Skip();
+        });
+
+    return button;
+}
+
 // Add new custom event for access request
 wxDECLARE_EVENT(CUSTOM_ACCESS_REQUEST_EVENT, wxCommandEvent);
 wxDEFINE_EVENT(CUSTOM_ACCESS_REQUEST_EVENT, wxCommandEvent);
@@ -97,8 +132,8 @@ AccessRequestDialog::AccessRequestDialog(wxWindow* parent, const wxString& fromE
 
     // Button sizer for Yes and No buttons
     wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
-    m_yesButton = new wxButton(panel, wxID_YES, "Yes");
-    m_noButton = new wxButton(panel, wxID_NO, "No");
+    m_yesButton = styledButton(panel, wxID_YES, "Yes");
+    m_noButton = styledButton(panel, wxID_NO, "No");
 
     buttonSizer->Add(m_yesButton, 0, wxALL, 10);
     buttonSizer->Add(m_noButton, 0, wxALL, 10);
@@ -124,28 +159,43 @@ int AccessRequestDialog::ShowModal() {
     return wxDialog::ShowModal();
 }
 
-// Authentication Frame Implementation
 AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control - Authentication",
         wxDefaultPosition, wxSize(500, 300)),
     m_api(api) {
 
-    wxPanel* panel = new wxPanel(this, wxID_ANY);
+    wxPanel* mainPanel = new wxPanel(this, wxID_ANY);
     wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+    SetSizer(mainSizer);
+    mainSizer->Add(mainPanel, 1, wxEXPAND);
 
-    // Add authentication choice buttons at the top
+    wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
+    mainPanel->SetSizer(panelSizer);
+
+    // Add a title
+    wxStaticText* title = new wxStaticText(mainPanel, wxID_ANY, "AUTHENTICATION OPTIONS",
+        wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
+    wxFont titleFont = title->GetFont();
+    titleFont.SetPointSize(14);
+    titleFont.SetWeight(wxFONTWEIGHT_BOLD);
+    title->SetFont(titleFont);
+    panelSizer->Add(title, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 10);
+
+    // Add authentication choice buttons at the top with some spacing
     wxBoxSizer* choiceSizer = new wxBoxSizer(wxHORIZONTAL);
-    m_autoAuthBtn = new wxButton(panel, wxID_ANY, "Automatic Authentication");
-    m_manualAuthBtn = new wxButton(panel, wxID_ANY, "Manual Authentication");
+    m_autoAuthBtn = styledButton(mainPanel, wxID_ANY, "Automatic Authentication");
+    m_manualAuthBtn = styledButton(mainPanel, wxID_ANY, "Manual Authentication");
     choiceSizer->Add(m_autoAuthBtn, 1, wxALL | wxEXPAND, 5);
+    choiceSizer->AddSpacer(10);
     choiceSizer->Add(m_manualAuthBtn, 1, wxALL | wxEXPAND, 5);
-    mainSizer->Add(choiceSizer, 0, wxALL | wxEXPAND, 10);
+    panelSizer->Add(choiceSizer, 0, wxALL | wxEXPAND, 10);
 
-    // Manual authentication panel
-    m_manualAuthPanel = new wxPanel(panel, wxID_ANY);
+    // Create manual authentication panel ONCE
+    m_manualAuthPanel = new wxPanel(mainPanel, wxID_ANY);
     wxBoxSizer* manualSizer = new wxBoxSizer(wxVERTICAL);
+    m_manualAuthPanel->SetSizer(manualSizer);
 
-    // Authentication URL with Hyperlink
+    // Instructions
     wxStaticText* instructLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY,
         "To authenticate, please follow these steps:");
     wxStaticText* step1Label = new wxStaticText(m_manualAuthPanel, wxID_ANY,
@@ -160,6 +210,7 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     manualSizer->Add(step2Label, 0, wxALL | wxCENTER, 10);
     manualSizer->Add(step3Label, 0, wxALL | wxCENTER, 10);
 
+    // URL Controls
     wxBoxSizer* urlSizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* urlTextLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Authorization URL: ");
     m_authUrlLink = new wxHyperlinkCtrl(m_manualAuthPanel, wxID_ANY,
@@ -170,7 +221,7 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     manualSizer->Add(urlSizer, 0, wxALL | wxCENTER, 10);
 
     // Copy URL Button
-    wxButton* copyUrlBtn = new wxButton(m_manualAuthPanel, wxID_ANY, "Copy URL");
+    wxButton* copyUrlBtn = styledButton(m_manualAuthPanel, wxID_ANY, "Copy URL");
     copyUrlBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
         if (wxTheClipboard->Open()) {
             wxTheClipboard->SetData(new wxTextDataObject(m_api.getAuthorizationUrl()));
@@ -184,21 +235,18 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     wxBoxSizer* authSizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* authLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Enter Authorization Code:");
     m_authCodeCtrl = new wxTextCtrl(m_manualAuthPanel, wxID_ANY);
-
-    wxButton* authenticateBtn = new wxButton(m_manualAuthPanel, wxID_ANY, "Authenticate");
+    wxButton* authenticateBtn = styledButton(m_manualAuthPanel, wxID_ANY, "Authenticate");
     authenticateBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAuthenticate, this);
 
     authSizer->Add(authLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
     authSizer->Add(m_authCodeCtrl, 1, wxALIGN_CENTER_VERTICAL);
     authSizer->Add(authenticateBtn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 10);
-
     manualSizer->Add(authSizer, 0, wxALL | wxEXPAND, 10);
-    m_manualAuthPanel->SetSizer(manualSizer);
 
-    mainSizer->Add(m_manualAuthPanel, 1, wxEXPAND);
-    panel->SetSizer(mainSizer);
+    // Add manual auth panel to main panel sizer
+    panelSizer->Add(m_manualAuthPanel, 1, wxEXPAND | wxALL, 10);
 
-    // Bind events for authentication choice buttons
+    // Bind events
     m_autoAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAutoAuthenticate, this);
     m_manualAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnManualAuthenticate, this);
 
@@ -210,7 +258,10 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
 
 void AuthenticationFrame::ShowManualAuthControls(bool show) {
     m_manualAuthPanel->Show(show);
-    Layout();
+    m_manualAuthPanel->GetSizer()->Layout();
+    GetSizer()->Layout();
+    Refresh();
+    Update();
 }
 
 void AuthenticationFrame::OnAuthenticate(wxCommandEvent& event) {
@@ -349,7 +400,6 @@ void ServerMonitorFrame::UpdateCommandInfo() {
     if (!m_server.currentCommand.content.empty()) {
 		if (m_server.currentCommand.content == "requestAccess") {
             // Trigger custom event for access request
-            m_accessRequesting = true;
             m_currentCommandLabel->SetLabel("Access Request");
             m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
             string fromEmail = m_server.currentCommand.from;
@@ -516,5 +566,5 @@ bool RemoteControlApp::OnInit() {
     return true;
 }
 
-// Implement the wxWidgets application
+// Keep the wxWidgets application implementation
 wxIMPLEMENT_APP(RemoteControlApp);
