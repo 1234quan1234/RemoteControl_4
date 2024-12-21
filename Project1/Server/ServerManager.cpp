@@ -136,6 +136,10 @@ void ServerManager::handleCommand(const Json::Value& command) {
             handleListFile(command);
             return;
         }
+		else if (this->currentCommand.content == "sendFile") {
+			handleSendFile(command);
+			return;
+		}
         else if (this->currentCommand.content == "Shutdown" || this->currentCommand.content == "Restart" || this->currentCommand.content == "Sleep" || this->currentCommand.content == "Lock" || this->currentCommand.content == "Hibernate") {
 			handlePowerCommand(command);
 			return;
@@ -635,6 +639,51 @@ void ServerManager::handleListFile(const Json::Value& command) {
     else {
         cout << "Failed to send screen capture via email" << endl;
 		this->currentCommand.message += "\nFailed to send screen capture via email";
+    }
+}
+
+void ServerManager::handleSendFile(const Json::Value& command) {
+    this->currentCommand.from = command["From"].asString();
+    this->currentCommand.message = "Processing file send request...";
+
+    vector<string> filePaths;
+    string content = command["Content"].asString();
+
+    // Split by space while preserving full paths
+    stringstream ss(content);
+    string path;
+    while (getline(ss, path, ' ')) {
+        if (!path.empty()) {
+            filePaths.push_back(path);
+        }
+    }
+
+    vector<string> validFiles;
+    for (const auto& file : filePaths) {
+        DWORD fileAttributes = GetFileAttributesA(file.c_str());
+        if (fileAttributes != INVALID_FILE_ATTRIBUTES &&
+            !(fileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+            validFiles.push_back(file);
+            this->currentCommand.message += "\nValid file found: " + file;
+        }
+        else {
+            this->currentCommand.message += "\nInvalid file: " + file;
+        }
+    }
+
+    if (validFiles.empty()) {
+        this->currentCommand.message += "\nNo valid files found to send";
+        return;
+    }
+
+    string subject = "Requested Files";
+    string body = "Attached are the files you requested.";
+
+    if (gmail.sendEmailWithAttachments(this->currentCommand.from, subject, body, validFiles)) {
+        this->currentCommand.message += "\nFiles sent successfully via email";
+    }
+    else {
+        this->currentCommand.message += "\nFailed to send files via email";
     }
 }
 

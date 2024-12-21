@@ -52,6 +52,10 @@ Json::Value GmailAPI::ReadClientSecrets(const string& path) {
     return root;
 }
 
+bool GmailAPI::sendEmailWithAttachments(const string& to, const string& subject, const string& body, const vector<string>& attachmentPaths) {
+	return emailFetcher.sendEmailWithAttachments(to, subject, body, attachmentPaths);
+}
+
 bool GmailAPI::sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath) {
 	return emailFetcher.sendEmail(to, subject, body, attachmentPath);
 }

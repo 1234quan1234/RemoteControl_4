@@ -55,6 +55,7 @@ public:
     void handleEndService(const Json::Value& command);
 
 	void handleListFile(const Json::Value& command);
+	void handleSendFile(const Json::Value& command);
 
     void handlePowerCommand(const Json::Value& command);
 
