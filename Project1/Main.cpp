@@ -11,7 +11,14 @@ namespace UIColors {
     const wxColour SECONDARY(255, 255, 255);      // White
     const wxColour ACCENT(241, 196, 15);          // Gold
     const wxColour BACKGROUND(245, 245, 245);     // Light Gray
-    const wxColour TEXT(51, 51, 51);              // Dark Gray
+    const wxColour NORMALTEXT(51, 51, 51);          // Dark Gray
+    const wxColour STATUS_GREEN(39, 174, 96);    // Success green
+    const wxColour STATUS_YELLOW(241, 196, 15);  // Warning yellow
+    const wxColour STATUS_RED(231, 76, 60);      // Error red
+    const wxColour PANEL_BG(250, 250, 250);      // Light panel background
+    const wxColour BORDER(229, 229, 229);        // Border color
+    const wxColour EMAIL_COLOR(41, 128, 185);    // Blue for email addresses
+    const wxColour MESSAGE_COLOR(52, 73, 94);    // Dark gray for message content
 }
 
 // Add this helper function for styled buttons
@@ -37,6 +44,24 @@ wxButton* styledButton(wxWindow* parent, wxWindowID id, const wxString& label) {
         });
 
     return button;
+}
+
+// Helper function for creating styled panels
+wxPanel* createStyledPanel(wxWindow* parent) {
+    wxPanel* panel = new wxPanel(parent, wxID_ANY);
+    panel->SetBackgroundColour(UIColors::PANEL_BG);
+    return panel;
+}
+
+// Helper function for creating styled text
+wxStaticText* createStyledText(wxWindow* parent, const wxString& label, bool isBold = false) {
+    wxStaticText* text = new wxStaticText(parent, wxID_ANY, label);
+    wxFont font = text->GetFont();
+    if (isBold) {
+        font.SetWeight(wxFONTWEIGHT_BOLD);
+    }
+    text->SetFont(font);
+    return text;
 }
 
 // Add new custom event for access request
@@ -84,8 +109,13 @@ private:
     wxStaticText* m_gmailNameLabel;
 
     wxStaticText* m_currentCommandLabel;
-    wxStaticText* m_commandFromLabel;
-    wxStaticText* m_commandMessageLabel;
+    //wxStaticText* m_commandFromLabel;
+    //wxStaticText* m_commandMessageLabel;
+
+    wxStaticText* m_fromLabelText;
+    wxStaticText* m_fromContentText;
+    wxStaticText* m_messageLabelText;
+    wxStaticText* m_messageContentText;
 
 	bool m_accessRequesting = false;
 
@@ -329,64 +359,113 @@ EVT_TIMER(wxID_ANY, ServerMonitorFrame::OnUpdateTimer)
 EVT_COMMAND(wxID_ANY, CUSTOM_ACCESS_REQUEST_EVENT, ServerMonitorFrame::OnAccessRequest)
 wxEND_EVENT_TABLE()
 
-// Server Monitor Frame Implementation
+// ServerMonitorFrame implementation
 ServerMonitorFrame::ServerMonitorFrame(GmailAPI& api, ServerManager& server, SystemInfo& sysInfo)
     : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control - Server Monitor",
-        wxDefaultPosition, wxSize(600, 400)),
-    m_api(api), m_server(server), m_sysInfo(sysInfo),
-    m_hostnameLabel(nullptr), m_localIPLabel(nullptr), m_gmailNameLabel(nullptr) {
+        wxDefaultPosition, wxSize(800, 600)),
+    m_api(api), m_server(server), m_sysInfo(sysInfo) {
 
-    wxPanel* panel = new wxPanel(this, wxID_ANY);
+    // Set frame background and create main panel
+    SetBackgroundColour(UIColors::BACKGROUND);
+    wxPanel* mainPanel = new wxPanel(this, wxID_ANY);
     wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 
-    // Server Info Section
-    wxStaticBoxSizer* serverInfoSizer = new wxStaticBoxSizer(wxVERTICAL, panel, "Server's Information");
+    // Status Bar Panel
+    wxPanel* statusPanel = createStyledPanel(mainPanel);
+    wxBoxSizer* statusSizer = new wxBoxSizer(wxHORIZONTAL);
 
-    // Hostname
-    m_hostnameLabel = new wxStaticText(panel, wxID_ANY,
-        wxString::Format("Hostname: %s", m_sysInfo.hostname));
-    serverInfoSizer->Add(m_hostnameLabel, 0, wxALL, 5);
+    // Server status indicator (colored circle)
+    wxPanel* statusIndicator = new wxPanel(statusPanel, wxID_ANY, wxDefaultPosition, wxSize(12, 12));
+    statusIndicator->SetBackgroundColour(UIColors::STATUS_GREEN);
+    statusSizer->Add(statusIndicator, 0, wxALL | wxALIGN_CENTER_VERTICAL, 10);
 
-    // Local IP
-    m_localIPLabel = new wxStaticText(panel, wxID_ANY,
-        wxString::Format("Local IP: %s", m_sysInfo.localIP));
-    serverInfoSizer->Add(m_localIPLabel, 0, wxALL, 5);
+    // Status text
+    wxStaticText* statusText = createStyledText(statusPanel, "Server's running", true);
+    statusText->SetForegroundColour(UIColors::STATUS_GREEN);
+    statusSizer->Add(statusText, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
-    // Gmail Name
-    m_gmailNameLabel = new wxStaticText(panel, wxID_ANY,
-        wxString::Format("Server's Gmail: %s", m_api.getServerName()));
-    serverInfoSizer->Add(m_gmailNameLabel, 0, wxALL, 5);
+    statusPanel->SetSizer(statusSizer);
+    mainSizer->Add(statusPanel, 0, wxALL | wxEXPAND, 10);
 
-    mainSizer->Add(serverInfoSizer, 0, wxALL | wxEXPAND, 10);
+    // Server Info Card
+    wxPanel* infoCard = createStyledPanel(mainPanel);
+    wxStaticBoxSizer* infoSizer = new wxStaticBoxSizer(wxVERTICAL, infoCard, "");
+    infoCard->SetBackgroundColour(UIColors::SECONDARY);
 
-    // Command Processing Section
-    wxBoxSizer* commandSizer = new wxBoxSizer(wxHORIZONTAL);
+    // Info grid
+    wxFlexGridSizer* gridSizer = new wxFlexGridSizer(3, 2, 15, 20);
 
-    // Left side - Current Command
-    wxStaticBoxSizer* leftSizer = new wxStaticBoxSizer(wxVERTICAL, panel, "Current Command");
-    m_currentCommandLabel = new wxStaticText(panel, wxID_ANY, "Waiting for command");
-    leftSizer->Add(m_currentCommandLabel, 0, wxALL | wxEXPAND, 5);
-    commandSizer->Add(leftSizer, 1, wxEXPAND | wxRIGHT, 5);
+    // Labels with icons (you can add actual icons using wxBitmap)
+    m_hostnameLabel = createStyledText(infoCard, wxString::Format("%s", m_sysInfo.hostname));
+    m_localIPLabel = createStyledText(infoCard, wxString::Format("%s", m_sysInfo.localIP));
+    m_gmailNameLabel = createStyledText(infoCard, wxString::Format("%s", m_api.getServerName()));
 
-    // Right side - Command Details
-    wxStaticBoxSizer* rightSizer = new wxStaticBoxSizer(wxVERTICAL, panel, "Command Details");
-    m_commandFromLabel = new wxStaticText(panel, wxID_ANY, "");
-    m_commandMessageLabel = new wxStaticText(panel, wxID_ANY, "");
-    rightSizer->Add(m_commandFromLabel, 0, wxALL | wxEXPAND, 5);
-    rightSizer->Add(m_commandMessageLabel, 0, wxALL | wxEXPAND, 5);
-    commandSizer->Add(rightSizer, 1, wxEXPAND);
+    gridSizer->Add(createStyledText(infoCard, "Hostname:", true));
+    gridSizer->Add(m_hostnameLabel);
+    gridSizer->Add(createStyledText(infoCard, "Local IP:", true));
+    gridSizer->Add(m_localIPLabel);
+    gridSizer->Add(createStyledText(infoCard, "Server's Gmail:", true));
+    gridSizer->Add(m_gmailNameLabel);
 
-    mainSizer->Add(commandSizer, 1, wxALL | wxEXPAND, 10);
+    infoSizer->Add(gridSizer, 1, wxALL | wxEXPAND, 15);
+    infoCard->SetSizer(infoSizer);
+    mainSizer->Add(infoCard, 0, wxALL | wxEXPAND, 10);
 
-    panel->SetSizer(mainSizer);
+    // Command Monitor Card
+    wxPanel* commandCard = createStyledPanel(mainPanel);
+    wxStaticBoxSizer* commandSizer = new wxStaticBoxSizer(wxVERTICAL, commandCard, "");
+
+    // Current command section
+    wxPanel* commandStatusPanel = createStyledPanel(commandCard);
+    wxBoxSizer* commandStatusSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Current command label
+    m_currentCommandLabel = new wxStaticText(commandStatusPanel, wxID_ANY, "Waiting for command");
+    wxFont boldFont = m_currentCommandLabel->GetFont();
+    boldFont.SetWeight(wxFONTWEIGHT_BOLD);
+    m_currentCommandLabel->SetFont(boldFont.Scale(1.5));
+
+    // From line with horizontal sizer
+    wxBoxSizer* fromSizer = new wxBoxSizer(wxHORIZONTAL);
+    m_fromLabelText = new wxStaticText(commandStatusPanel, wxID_ANY, "From:     ");
+    wxFont boldFont1 = m_fromLabelText->GetFont();
+    boldFont1.SetWeight(wxFONTWEIGHT_BOLD);
+    m_fromLabelText->SetFont(boldFont1);
+    m_fromContentText = new wxStaticText(commandStatusPanel, wxID_ANY, "");
+    m_fromContentText->SetForegroundColour(UIColors::EMAIL_COLOR);
+    fromSizer->Add(m_fromLabelText, 0, wxALIGN_CENTER_VERTICAL);
+    fromSizer->Add(m_fromContentText, 0, wxALIGN_CENTER_VERTICAL);
+
+    // Message line with horizontal sizer
+    wxBoxSizer* messageSizer = new wxBoxSizer(wxHORIZONTAL);
+    m_messageLabelText = new wxStaticText(commandStatusPanel, wxID_ANY, "Message:   ");
+    m_messageLabelText->SetFont(boldFont1);
+    m_messageContentText = new wxStaticText(commandStatusPanel, wxID_ANY, "");
+    m_messageContentText->SetForegroundColour(UIColors::MESSAGE_COLOR);
+    messageSizer->Add(m_messageLabelText, 0, wxALIGN_CENTER_VERTICAL);
+    messageSizer->Add(m_messageContentText, 0, wxALIGN_CENTER_VERTICAL);
+
+    commandStatusSizer->Add(m_currentCommandLabel, 0, wxALL, 5);
+    commandStatusSizer->Add(fromSizer, 0, wxALL, 5);
+    commandStatusSizer->Add(messageSizer, 0, wxALL, 5);
+
+    commandStatusPanel->SetSizer(commandStatusSizer);
+    commandSizer->Add(commandStatusPanel, 1, wxALL | wxEXPAND, 10);
+
+    commandCard->SetSizer(commandSizer);
+    mainSizer->Add(commandCard, 1, wxALL | wxEXPAND, 10);
+
+    mainPanel->SetSizer(mainSizer);
 
     // Setup update timer
     m_updateTimer = new wxTimer(this);
     Bind(wxEVT_TIMER, &ServerMonitorFrame::OnUpdateTimer, this, m_updateTimer->GetId());
     m_maxBlinkCount = 10;
-    m_updateTimer->Start(5000 / m_maxBlinkCount); // Update every 5 seconds
+    m_updateTimer->Start(5000 / m_maxBlinkCount);
     m_blinkCounter = 0;
 
+    // Set minimum size and center the frame
+    SetMinSize(wxSize(600, 400));
     Center();
 }
 
@@ -394,23 +473,30 @@ void ServerMonitorFrame::UpdateCommandInfo() {
     if (m_blinkCounter >= m_maxBlinkCount) {
         m_blinkCounter = 0;
         m_server.processCommands();
-		m_accessRequesting = false;
+        m_accessRequesting = false;
     }
 
     if (!m_server.currentCommand.content.empty()) {
-		if (m_server.currentCommand.content == "requestAccess") {
-            // Trigger custom event for access request
-            m_currentCommandLabel->SetLabel("Access Request");
-            m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
-            string fromEmail = m_server.currentCommand.from;
+        // Update command display with animation
+        m_currentCommandLabel->SetForegroundColour(UIColors::PRIMARY);
 
-			// Find if fromEmail already in approvedAccess.email
+        if (m_server.currentCommand.content == "requestAccess") {
+            // Handle access request UI updates
+            m_currentCommandLabel->SetLabel("Access Request");
+            m_currentCommandLabel->SetForegroundColour(UIColors::STATUS_YELLOW);
+			m_fromLabelText->SetLabel("From: ");
+            m_fromContentText->SetLabel(m_server.currentCommand.from);
+
+
+			//check if the email is already approved
+			string fromEmail = m_server.currentCommand.from;
+            // Find if fromEmail already in approvedAccess.email
             m_server.loadAccessList();
-			auto it = find_if(m_server.approvedAccess.begin(), m_server.approvedAccess.end(),
-				[&fromEmail](const AccessInfo& access) { return access.email == fromEmail; });
+            auto it = find_if(m_server.approvedAccess.begin(), m_server.approvedAccess.end(),
+                [&fromEmail](const AccessInfo& access) { return access.email == fromEmail; });
 
             // If access exists and is still valid
-			if (it != m_server.approvedAccess.end() && m_server.isAccessValid(*it)) {
+            if (it != m_server.approvedAccess.end() && m_server.isAccessValid(*it)) {
                 // Calculate remaining time
                 time_t now = time(nullptr);
                 time_t expiryTime = it->grantedTime + (AccessInfo::VALIDITY_HOURS * 3600);
@@ -428,44 +514,63 @@ void ServerMonitorFrame::UpdateCommandInfo() {
                     "\nHours remaining: " + to_string(static_cast<int>(hoursLeft)));
 
                 // Update UI labels
-				m_server.currentCommand.content = "Access Request (Already granted)";
-				m_server.currentCommand.message = "Access already granted until: " + string(timeStr);
-				m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
+                m_server.currentCommand.content = "Access Request (Already granted)";
+                m_server.currentCommand.message = "Access already granted until: " + string(timeStr);
+                m_currentCommandLabel->SetLabel(m_server.currentCommand.content);
+                m_currentCommandLabel->SetForegroundColour(UIColors::STATUS_YELLOW);
+				m_messageLabelText->SetLabel("Message: ");
+				m_messageContentText->SetLabel(m_server.currentCommand.message);
+
+
 
                 // Clear the current command
                 m_server.currentCommand.content.clear();
-				m_blinkCounter = 0;
-				m_accessRequesting = false;
-                
+                m_blinkCounter = 0;
+                m_accessRequesting = false;
+
                 return;
             }
 
-            // If no existing valid access, proceed with access request
-            if (m_accessRequesting) return;
-            wxCommandEvent accessRequestEvent(CUSTOM_ACCESS_REQUEST_EVENT);
-            QueueEvent(accessRequestEvent.Clone());
+            if (!m_accessRequesting) {
+                wxCommandEvent accessRequestEvent(CUSTOM_ACCESS_REQUEST_EVENT);
+                QueueEvent(accessRequestEvent.Clone());
+            }
         }
         else {
+            // Regular command updates
             m_currentCommandLabel->SetLabel(m_server.currentCommand.content);
-            m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
-            m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
+			m_fromLabelText->SetLabel("From: ");
+			m_fromContentText->SetLabel(m_server.currentCommand.from);
+			m_messageLabelText->SetLabel("Message: ");
+			m_messageContentText->SetLabel(m_server.currentCommand.message);
         }
     }
-
+    
+    // Waiting animation
     if (m_blinkCounter < m_maxBlinkCount) {
         if (m_server.currentCommand.content.empty()) {
             wxString waitingText = "Waiting for command";
-            
-			for (int i = 0; i <= m_blinkCounter % 5; i++) {
-				waitingText += ".";
-			}
+
+            for (int i = 0; i <= m_blinkCounter % 3; i++) {
+                waitingText += ".";
+            }
 
             m_currentCommandLabel->SetLabel(waitingText);
-            m_commandFromLabel->SetLabel("");
-            m_commandMessageLabel->SetLabel("");
+            m_currentCommandLabel->SetForegroundColour(UIColors::NORMALTEXT);
+			m_fromLabelText->SetLabel("");
+            m_fromContentText->SetLabel("");
+			m_messageLabelText->SetLabel("");
+			m_messageContentText->SetLabel("");
+            
         }
         m_blinkCounter++;
     }
+
+    
+
+    // Refresh the frame to ensure smooth updates
+    Refresh();
+    Update();
 }
 
 void ServerMonitorFrame::OnUpdateTimer(wxTimerEvent& event) {
@@ -497,9 +602,12 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
 		m_server.currentCommand.content = "Access request (Granted)";
 		m_server.currentCommand.message = "Access granted until: " + std::string(timeStr);
 		m_server.currentCommand.from = access.email;
-		m_currentCommandLabel->SetLabel(m_server.currentCommand.content);    
-		m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
-		m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
+		m_currentCommandLabel->SetLabel(m_server.currentCommand.content);  
+        m_currentCommandLabel->SetForegroundColour(UIColors::STATUS_GREEN);
+		m_fromLabelText->SetLabel("From: ");
+        m_fromContentText->SetLabel(m_server.currentCommand.from);
+		m_messageLabelText->SetLabel("Message: ");
+		m_messageContentText->SetLabel(m_server.currentCommand.message);
     }
     else {
         m_server.gmail.sendSimpleEmail(m_server.currentCommand.from, "Access Denied",
@@ -508,9 +616,12 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
         // Explicitly update labels
 		m_server.currentCommand.content = "Access request (Denied)";
 		m_server.currentCommand.message = "Access request was denied";
-		m_currentCommandLabel->SetLabel(m_server.currentCommand.content);
-		m_commandFromLabel->SetLabel(wxString::Format("From: %s", m_server.currentCommand.from));
-		m_commandMessageLabel->SetLabel(wxString::Format("Message: %s", m_server.currentCommand.message));
+        m_currentCommandLabel->SetLabel(m_server.currentCommand.content);
+        m_currentCommandLabel->SetForegroundColour(UIColors::STATUS_RED);
+        m_fromLabelText->SetLabel("From: ");
+        m_fromContentText->SetLabel(m_server.currentCommand.from);
+        m_messageLabelText->SetLabel("Message: ");
+        m_messageContentText->SetLabel(m_server.currentCommand.message);
     }
 
     // Clear the current command after processing
