@@ -132,6 +132,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
 
     if (!m_server.currentCommand.content.empty()) {
         // Update command display with animation
+        
         m_currentCommandLabel->SetForegroundColour(UIColors::PRIMARY);
 
         if (m_server.currentCommand.content == "requestAccess") {
@@ -178,7 +179,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
 
 
                 // Clear the current command
-                m_server.currentCommand.content.clear();
+                //m_server.currentCommand.content.clear();
                 m_blinkCounter = 0;
                 m_accessRequesting = false;
 
@@ -193,7 +194,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
         else {
             // Regular command updates
             m_currentCommandLabel->SetLabel(m_server.currentCommand.content);
-			m_fromLabelText->SetLabel("From: ");
+            m_fromLabelText->SetLabel("From: ");
 			m_fromContentText->SetLabel(m_server.currentCommand.from);
 			m_messageLabelText->SetLabel("Message: ");
 			m_messageContentText->SetLabel(m_server.currentCommand.message);
@@ -279,11 +280,11 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
     }
 
     // Clear the current command after processing
-    m_server.currentCommand.content.clear();
+    //m_server.currentCommand.content.clear();
 	m_blinkCounter = 0;
 	m_accessRequesting = false;
 
-	wxMilliSleep(5000);
+	UpdateCommandInfo();
 }
 
 
