@@ -1,6 +1,7 @@
 ﻿#include <wx/wx.h>
 #include <wx/hyperlink.h>
 #include <wx/clipbrd.h>
+#include <wx/statline.h>
 #include "Server/ServerManager.h"
 #include "RemoteControl/SystemInfo.h"
 
@@ -54,7 +55,7 @@ wxPanel* createStyledPanel(wxWindow* parent) {
 }
 
 // Helper function for creating styled text
-wxStaticText* createStyledText(wxWindow* parent, const wxString& label, bool isBold = false) {
+wxStaticText* styledText(wxWindow* parent, const wxString& label, bool isBold = false) {
     wxStaticText* text = new wxStaticText(parent, wxID_ANY, label);
     wxFont font = text->GetFont();
     if (isBold) {
@@ -76,6 +77,8 @@ private:
     wxButton* m_manualAuthBtn;
     wxButton* m_autoAuthBtn;
     wxPanel* m_manualAuthPanel;
+    wxStaticBitmap* m_logoImage;
+    wxStaticText* m_titleText;
 
     void OnAuthenticate(wxCommandEvent& event);        // Event handler for manual authentication
     void OnCopyURL(wxHyperlinkEvent& event);          // Event handler for URL copying
@@ -86,6 +89,7 @@ private:
 public:
     AuthenticationFrame(GmailAPI& api);
 };
+
 
 class AccessRequestDialog : public wxDialog {
 private:
@@ -189,38 +193,235 @@ int AccessRequestDialog::ShowModal() {
     return wxDialog::ShowModal();
 }
 
-AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
+/*AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
     : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control - Authentication",
         wxDefaultPosition, wxSize(500, 300)),
     m_api(api) {
 
+    wxImage::AddHandler(new wxPNGHandler());
+    wxIcon appIcon;
+    if (appIcon.LoadFile("imgs/hcmus-logo.png", wxBITMAP_TYPE_PNG))
+        AuthenticationFrame::SetIcon(appIcon);
+
+
+    SetBackgroundColour(UIColors::BACKGROUND);
+
+    // Main panel and sizer
+    wxPanel* mainPanel = new wxPanel(this);
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Add logo
+    wxImage hcmusLogo(L"imgs/hcmus-logo.png", wxBITMAP_TYPE_PNG);
+    if (hcmusLogo.IsOk()) {
+        int targetSize = 150;
+        double scale = std::min((double)targetSize / hcmusLogo.GetWidth(),
+            (double)targetSize / hcmusLogo.GetHeight());
+        wxImage scaledLogo = hcmusLogo.Scale(
+            hcmusLogo.GetWidth() * scale,
+            hcmusLogo.GetHeight() * scale,
+            wxIMAGE_QUALITY_HIGH);
+
+        m_logoImage = new wxStaticBitmap(mainPanel, wxID_ANY,
+            wxBitmap(scaledLogo));
+        mainSizer->AddSpacer(20);
+        mainSizer->Add(m_logoImage, 0, wxALIGN_CENTER_HORIZONTAL);
+    }
+
+    // Title with larger, bold font
+    m_titleText = new wxStaticText(mainPanel, wxID_ANY, "Gmail Remote Control");
+    wxFont titleFont = m_titleText->GetFont();
+    titleFont.SetPointSize(titleFont.GetPointSize() * 1.5);
+    titleFont.SetWeight(wxFONTWEIGHT_BOLD);
+    m_titleText->SetFont(titleFont);
+    m_titleText->SetForegroundColour(UIColors::PRIMARY);
+    mainSizer->AddSpacer(15);
+    mainSizer->Add(m_titleText, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+
+    // Subtitle
+    wxStaticText* subtitle = new wxStaticText(mainPanel, wxID_ANY,
+        "Please choose your authentication method:");
+    subtitle->SetForegroundColour(UIColors::NORMALTEXT);
+    mainSizer->Add(subtitle, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+
+    // Authentication choice card
+    wxPanel* choicePanel = new wxPanel(mainPanel);
+    choicePanel->SetBackgroundColour(UIColors::SECONDARY);
+    wxBoxSizer* choiceSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Auto auth button with icon
+    m_autoAuthBtn = styledButton(choicePanel, wxID_ANY, "Automatic Authentication");
+    m_autoAuthBtn->SetMinSize(wxSize(250, 40));
+    choiceSizer->Add(m_autoAuthBtn, 0, wxALIGN_CENTER | wxALL, 10);
+
+    // Separator line
+    wxStaticLine* line = new wxStaticLine(choicePanel);
+    choiceSizer->Add(line, 0, wxEXPAND | wxALL, 10);
+
+    // Manual auth button
+    m_manualAuthBtn = styledButton(choicePanel, wxID_ANY, "Manual Authentication");
+    m_manualAuthBtn->SetMinSize(wxSize(250, 40));
+    choiceSizer->Add(m_manualAuthBtn, 0, wxALIGN_CENTER | wxALL, 10);
+
+    choicePanel->SetSizer(choiceSizer);
+    mainSizer->Add(choicePanel, 0, wxEXPAND | wxALL, 20);
+
+    // Manual authentication panel
+    m_manualAuthPanel = new wxPanel(mainPanel);
+    m_manualAuthPanel->SetBackgroundColour(UIColors::SECONDARY);
+    wxStaticBoxSizer* manualSizer = new wxStaticBoxSizer(wxVERTICAL, m_manualAuthPanel, "");
+
+    // Instructions with improved formatting
+    wxArrayString instructions;
+    instructions.Add("To authenticate manually, please follow these steps:");
+    instructions.Add("1. Click the authorization URL below or copy it to your browser");
+    instructions.Add("2. Sign in with your Google account and grant permissions");
+    instructions.Add("3. Copy the authorization code and paste it below");
+
+    for (const auto& instruction : instructions) {
+        wxStaticText* step = new wxStaticText(m_manualAuthPanel, wxID_ANY, instruction);
+        step->SetForegroundColour(UIColors::NORMALTEXT);
+        manualSizer->Add(step, 0, wxALL, 5);
+    }
+
+    // URL display and copy section
+    wxPanel* urlPanel = new wxPanel(m_manualAuthPanel);
+    urlPanel->SetBackgroundColour(*wxWHITE);
+    wxBoxSizer* urlSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    m_authUrlLink = new wxHyperlinkCtrl(urlPanel, wxID_ANY,
+        m_api.getAuthorizationUrl(), m_api.getAuthorizationUrl());
+    wxButton* copyUrlBtn = styledButton(urlPanel, wxID_ANY, "Copy URL");
+
+    urlSizer->Add(m_authUrlLink, 1, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    urlSizer->Add(copyUrlBtn, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
+    urlPanel->SetSizer(urlSizer);
+    manualSizer->Add(urlPanel, 0, wxEXPAND | wxALL, 10);
+
+    // Auth code input section
+    wxPanel* authPanel = new wxPanel(m_manualAuthPanel);
+    authPanel->SetBackgroundColour(*wxWHITE);
+    wxBoxSizer* authSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxStaticText* authLabel = new wxStaticText(authPanel, wxID_ANY,
+        "Authorization Code:");
+    m_authCodeCtrl = new wxTextCtrl(authPanel, wxID_ANY, "",
+        wxDefaultPosition, wxSize(-1, 35));
+    wxButton* authenticateBtn = styledButton(authPanel, wxID_ANY, "Authenticate");
+    authenticateBtn->SetMinSize(wxSize(120, 35));
+
+    authSizer->Add(authLabel, 0, wxALL, 5);
+    authSizer->Add(m_authCodeCtrl, 0, wxEXPAND | wxALL, 5);
+    authSizer->Add(authenticateBtn, 0, wxALIGN_RIGHT | wxALL, 5);
+
+    authPanel->SetSizer(authSizer);
+    manualSizer->Add(authPanel, 0, wxEXPAND | wxALL, 10);
+
+    m_manualAuthPanel->SetSizer(manualSizer);
+    mainSizer->Add(m_manualAuthPanel, 0, wxEXPAND | wxALL, 20);
+
+    // Bind events
+    copyUrlBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+        if (wxTheClipboard->Open()) {
+            wxTheClipboard->SetData(new wxTextDataObject(m_api.getAuthorizationUrl()));
+            wxTheClipboard->Close();
+        }
+        });
+
+    authenticateBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAuthenticate, this);
+    m_autoAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAutoAuthenticate, this);
+    m_manualAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnManualAuthenticate, this);
+
+    mainPanel->SetSizer(mainSizer);
+
+    // Initially hide manual authentication controls
+    ShowManualAuthControls(false);
+
+    // Set minimum size and center
+    SetMinSize(wxSize(500, 600));
+    Center();
+}*/
+
+AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
+    : wxFrame(nullptr, wxID_ANY, "Gmail Remote Control - Authentication",
+        wxDefaultPosition, wxSize(500, 600)),
+    m_api(api) {
+
+    wxImage::AddHandler(new wxPNGHandler());
+    wxIcon appIcon;
+    if (appIcon.LoadFile("imgs/hcmus-logo.png", wxBITMAP_TYPE_PNG))
+        AuthenticationFrame::SetIcon(appIcon);
+
+    // Basic debug output
+    wxLogDebug("Starting AuthenticationFrame initialization");
+
+    SetBackgroundColour(UIColors::BACKGROUND);
+
+    // Initialize image handlers only once
+    static bool handlersInitialized = false;
+    if (!handlersInitialized) {
+        wxImage::AddHandler(new wxPNGHandler());
+        handlersInitialized = true;
+    }
+
+    // Create base panel and sizer
     wxPanel* mainPanel = new wxPanel(this, wxID_ANY);
     wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
     SetSizer(mainSizer);
     mainSizer->Add(mainPanel, 1, wxEXPAND);
 
+    // Panel sizer
     wxBoxSizer* panelSizer = new wxBoxSizer(wxVERTICAL);
     mainPanel->SetSizer(panelSizer);
 
-    // Add a title
-    wxStaticText* title = new wxStaticText(mainPanel, wxID_ANY, "AUTHENTICATION OPTIONS",
+    // Try to load logo
+    wxImage hcmusLogo;
+    if (hcmusLogo.LoadFile("imgs/hcmus-logo.png", wxBITMAP_TYPE_PNG)) {
+        int targetSize = 150;
+        double scale = std::min((double)targetSize / hcmusLogo.GetWidth(),
+            (double)targetSize / hcmusLogo.GetHeight());
+        wxImage scaledLogo = hcmusLogo.Scale(
+            hcmusLogo.GetWidth() * scale,
+            hcmusLogo.GetHeight() * scale,
+            wxIMAGE_QUALITY_HIGH);
+
+        m_logoImage = new wxStaticBitmap(mainPanel, wxID_ANY,
+            wxBitmap(scaledLogo));
+        panelSizer->AddSpacer(20);
+        panelSizer->Add(m_logoImage, 0, wxALIGN_CENTER_HORIZONTAL);
+    }
+    else {
+        wxLogDebug("Failed to load logo image");
+    }
+
+    // Title
+    wxStaticText* titleText = new wxStaticText(mainPanel, wxID_ANY, "Gmail Remote Control",
         wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-    wxFont titleFont = title->GetFont();
+    wxFont titleFont = titleText->GetFont();
     titleFont.SetPointSize(14);
     titleFont.SetWeight(wxFONTWEIGHT_BOLD);
-    title->SetFont(titleFont);
-    panelSizer->Add(title, 0, wxALL | wxALIGN_CENTER_HORIZONTAL, 10);
+    titleText->SetFont(titleFont);
+    titleText->SetForegroundColour(UIColors::PRIMARY);
+    panelSizer->AddSpacer(15);
+    panelSizer->Add(titleText, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
 
-    // Add authentication choice buttons at the top with some spacing
-    wxBoxSizer* choiceSizer = new wxBoxSizer(wxHORIZONTAL);
+    // Subtitle
+    wxStaticText* subtitle = new wxStaticText(mainPanel, wxID_ANY,
+        "Please choose your authentication method:",
+        wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
+    subtitle->SetForegroundColour(UIColors::NORMALTEXT);
+    panelSizer->Add(subtitle, 0, wxALIGN_CENTER_HORIZONTAL | wxALL, 10);
+
+    // Authentication buttons
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
     m_autoAuthBtn = styledButton(mainPanel, wxID_ANY, "Automatic Authentication");
     m_manualAuthBtn = styledButton(mainPanel, wxID_ANY, "Manual Authentication");
-    choiceSizer->Add(m_autoAuthBtn, 1, wxALL | wxEXPAND, 5);
-    choiceSizer->AddSpacer(10);
-    choiceSizer->Add(m_manualAuthBtn, 1, wxALL | wxEXPAND, 5);
-    panelSizer->Add(choiceSizer, 0, wxALL | wxEXPAND, 10);
 
-    // Create manual authentication panel ONCE
+    buttonSizer->Add(m_autoAuthBtn, 1, wxALL | wxEXPAND, 5);
+    buttonSizer->AddSpacer(10);
+    buttonSizer->Add(m_manualAuthBtn, 1, wxALL | wxEXPAND, 5);
+    panelSizer->Add(buttonSizer, 0, wxALL | wxEXPAND, 10);
+
+    // Manual authentication panel
     m_manualAuthPanel = new wxPanel(mainPanel, wxID_ANY);
     wxBoxSizer* manualSizer = new wxBoxSizer(wxVERTICAL);
     m_manualAuthPanel->SetSizer(manualSizer);
@@ -242,53 +443,61 @@ AuthenticationFrame::AuthenticationFrame(GmailAPI& api)
 
     // URL Controls
     wxBoxSizer* urlSizer = new wxBoxSizer(wxHORIZONTAL);
-    wxStaticText* urlTextLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Authorization URL: ");
+    wxStaticText* urlLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Authorization URL: ");
     m_authUrlLink = new wxHyperlinkCtrl(m_manualAuthPanel, wxID_ANY,
         m_api.getAuthorizationUrl(), m_api.getAuthorizationUrl());
 
-    urlSizer->Add(urlTextLabel, 0, wxALIGN_CENTER_VERTICAL);
+    urlSizer->Add(urlLabel, 0, wxALIGN_CENTER_VERTICAL);
     urlSizer->Add(m_authUrlLink, 0, wxALIGN_CENTER_VERTICAL);
     manualSizer->Add(urlSizer, 0, wxALL | wxCENTER, 10);
 
     // Copy URL Button
     wxButton* copyUrlBtn = styledButton(m_manualAuthPanel, wxID_ANY, "Copy URL");
-    copyUrlBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
-        if (wxTheClipboard->Open()) {
-            wxTheClipboard->SetData(new wxTextDataObject(m_api.getAuthorizationUrl()));
-            wxTheClipboard->Close();
-            wxMessageBox("URL copied to clipboard!", "Copied", wxOK | wxICON_INFORMATION);
-        }
-        });
     manualSizer->Add(copyUrlBtn, 0, wxALL | wxCENTER, 10);
 
-    // Authorization Code Input
+    // Auth code input
     wxBoxSizer* authSizer = new wxBoxSizer(wxHORIZONTAL);
     wxStaticText* authLabel = new wxStaticText(m_manualAuthPanel, wxID_ANY, "Enter Authorization Code:");
-    m_authCodeCtrl = new wxTextCtrl(m_manualAuthPanel, wxID_ANY);
+    m_authCodeCtrl = new wxTextCtrl(m_manualAuthPanel, wxID_ANY, "",
+        wxDefaultPosition, wxSize(200, -1));
     wxButton* authenticateBtn = styledButton(m_manualAuthPanel, wxID_ANY, "Authenticate");
-    authenticateBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAuthenticate, this);
 
     authSizer->Add(authLabel, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 10);
     authSizer->Add(m_authCodeCtrl, 1, wxALIGN_CENTER_VERTICAL);
     authSizer->Add(authenticateBtn, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 10);
     manualSizer->Add(authSizer, 0, wxALL | wxEXPAND, 10);
 
-    // Add manual auth panel to main panel sizer
     panelSizer->Add(m_manualAuthPanel, 1, wxEXPAND | wxALL, 10);
 
     // Bind events
+    copyUrlBtn->Bind(wxEVT_BUTTON, [this](wxCommandEvent&) {
+        if (wxTheClipboard->Open()) {
+            wxTheClipboard->SetData(new wxTextDataObject(m_api.getAuthorizationUrl()));
+            wxTheClipboard->Close();
+            wxMessageBox("URL copied to clipboard!", "Success", wxOK | wxICON_INFORMATION);
+        }
+        });
+
+    authenticateBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAuthenticate, this);
     m_autoAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnAutoAuthenticate, this);
     m_manualAuthBtn->Bind(wxEVT_BUTTON, &AuthenticationFrame::OnManualAuthenticate, this);
 
     // Initially hide manual authentication controls
     ShowManualAuthControls(false);
 
+    // Ensure layout is correct
+    panelSizer->Layout();
+    mainSizer->Layout();
+
+    // Set minimum size and center
+    SetMinSize(wxSize(500, 400));
     Center();
+
+    wxLogDebug("AuthenticationFrame initialization complete");
 }
 
 void AuthenticationFrame::ShowManualAuthControls(bool show) {
     m_manualAuthPanel->Show(show);
-    m_manualAuthPanel->GetSizer()->Layout();
     GetSizer()->Layout();
     Refresh();
     Update();
@@ -365,6 +574,12 @@ ServerMonitorFrame::ServerMonitorFrame(GmailAPI& api, ServerManager& server, Sys
         wxDefaultPosition, wxSize(800, 600)),
     m_api(api), m_server(server), m_sysInfo(sysInfo) {
 
+    wxImage::AddHandler(new wxPNGHandler());
+    wxIcon appIcon;
+    if (appIcon.LoadFile("imgs/hcmus-logo.png", wxBITMAP_TYPE_PNG))
+        ServerMonitorFrame::SetIcon(appIcon);
+
+
     // Set frame background and create main panel
     SetBackgroundColour(UIColors::BACKGROUND);
     wxPanel* mainPanel = new wxPanel(this, wxID_ANY);
@@ -380,7 +595,7 @@ ServerMonitorFrame::ServerMonitorFrame(GmailAPI& api, ServerManager& server, Sys
     statusSizer->Add(statusIndicator, 0, wxALL | wxALIGN_CENTER_VERTICAL, 10);
 
     // Status text
-    wxStaticText* statusText = createStyledText(statusPanel, "Server's running", true);
+    wxStaticText* statusText = styledText(statusPanel, "Server's running", true);
     statusText->SetForegroundColour(UIColors::STATUS_GREEN);
     statusSizer->Add(statusText, 0, wxALL | wxALIGN_CENTER_VERTICAL, 5);
 
@@ -396,15 +611,15 @@ ServerMonitorFrame::ServerMonitorFrame(GmailAPI& api, ServerManager& server, Sys
     wxFlexGridSizer* gridSizer = new wxFlexGridSizer(3, 2, 15, 20);
 
     // Labels with icons (you can add actual icons using wxBitmap)
-    m_hostnameLabel = createStyledText(infoCard, wxString::Format("%s", m_sysInfo.hostname));
-    m_localIPLabel = createStyledText(infoCard, wxString::Format("%s", m_sysInfo.localIP));
-    m_gmailNameLabel = createStyledText(infoCard, wxString::Format("%s", m_api.getServerName()));
+    m_hostnameLabel = styledText(infoCard, wxString::Format("%s", m_sysInfo.hostname));
+    m_localIPLabel = styledText(infoCard, wxString::Format("%s", m_sysInfo.localIP));
+    m_gmailNameLabel = styledText(infoCard, wxString::Format("%s", m_api.getServerName()));
 
-    gridSizer->Add(createStyledText(infoCard, "Hostname:", true));
+    gridSizer->Add(styledText(infoCard, "Hostname:", true));
     gridSizer->Add(m_hostnameLabel);
-    gridSizer->Add(createStyledText(infoCard, "Local IP:", true));
+    gridSizer->Add(styledText(infoCard, "Local IP:", true));
     gridSizer->Add(m_localIPLabel);
-    gridSizer->Add(createStyledText(infoCard, "Server's Gmail:", true));
+    gridSizer->Add(styledText(infoCard, "Server's Gmail:", true));
     gridSizer->Add(m_gmailNameLabel);
 
     infoSizer->Add(gridSizer, 1, wxALL | wxEXPAND, 15);
@@ -642,6 +857,7 @@ ServerMonitorFrame::~ServerMonitorFrame() {
 
 // App Initialization
 bool RemoteControlApp::OnInit() {
+
     // Read client secrets
     auto secrets = GmailAPI::ReadClientSecrets("\\Resources\\ClientSecrets.json");
     m_api = new GmailAPI(
