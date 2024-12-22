@@ -37,34 +37,45 @@ bool ScreenshotHandler::createDirectory(const string& path) const {
 }
 
 bool ScreenshotHandler::captureWindow(const string& filename) {
-    // Get screen dimensions
-    int width = GetSystemMetrics(SM_CXSCREEN);
-    int height = GetSystemMetrics(SM_CYSCREEN);
+    // Set DPI awareness
+    SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+
+    // Get primary monitor
+    HMONITOR hMonitor = MonitorFromWindow(GetDesktopWindow(), MONITOR_DEFAULTTOPRIMARY);
+
+    // Get monitor info
+    MONITORINFOEX monitorInfo;
+    monitorInfo.cbSize = sizeof(MONITORINFOEX);
+    GetMonitorInfo(hMonitor, &monitorInfo);
+
+    // Get actual dimensions
+    int width = monitorInfo.rcMonitor.right - monitorInfo.rcMonitor.left;
+    int height = monitorInfo.rcMonitor.bottom - monitorInfo.rcMonitor.top;
 
     // Create DC and bitmap
     HDC screenDC = GetDC(NULL);
     HDC memDC = CreateCompatibleDC(screenDC);
     HBITMAP hBitmap = CreateCompatibleBitmap(screenDC, width, height);
-    SelectObject(memDC, hBitmap);
+    HBITMAP hOldBitmap = (HBITMAP)SelectObject(memDC, hBitmap);
 
-    // Capture screen to bitmap
-    BitBlt(memDC, 0, 0, width, height, screenDC, 0, 0, SRCCOPY);
+    // Capture screen
+    BitBlt(memDC, 0, 0, width, height,
+        screenDC,
+        monitorInfo.rcMonitor.left,
+        monitorInfo.rcMonitor.top,
+        SRCCOPY);
 
-    // Create GDI+ bitmap
+    // Save to file
     Gdiplus::Bitmap* screenshot = Gdiplus::Bitmap::FromHBITMAP(hBitmap, NULL);
-
-    // Get JPEG encoder
     CLSID jpgClsid;
     GetEncoderClsid(L"image/jpeg", &jpgClsid);
 
-    // Convert string to wstring for GDI+
     wstring wfilename(filename.begin(), filename.end());
-
-    // Save to file
     Gdiplus::Status status = screenshot->Save(wfilename.c_str(), &jpgClsid, NULL);
 
     // Cleanup
     delete screenshot;
+    SelectObject(memDC, hOldBitmap);
     DeleteObject(hBitmap);
     DeleteDC(memDC);
     ReleaseDC(NULL, screenDC);

@@ -365,7 +365,7 @@ void ServerManager::handleCaptureWebcam(const Json::Value& command) {
     this->currentCommand.from = command["From"].asString();
     cout << "Sender email: " << this->currentCommand.from << endl;
 
-    string path = "D:\\webcam_capture_" + to_string(time(nullptr)) + ".jpg";
+    string path = "D:\\webcam_capture" + to_string(time(nullptr)) + ".jpg";
 
     // Gọi hàm captureImage
     if (webcamCapture.captureImage(path.c_str())) {

@@ -13,7 +13,8 @@
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
 #pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "PowrProf.lib")  
+#pragma comment(lib, "PowrProf.lib")
+#pragma comment(lib, "Shcore.lib")
 
 #define CURL_STATICLIB
 #define _CRTDBG_MAP_ALLOC
@@ -87,3 +88,5 @@ using namespace std;
 #include <powrprof.h> 
 
 #include <Guiddef.h>
+
+#include <ShellScalingApi.h>

@@ -176,10 +176,7 @@ void ServerMonitorFrame::UpdateCommandInfo() {
 				m_messageLabelText->SetLabel("Message: ");
 				m_messageContentText->SetLabel(m_server.currentCommand.message);
 
-
-
                 // Clear the current command
-                //m_server.currentCommand.content.clear();
                 m_blinkCounter = 0;
                 m_accessRequesting = false;
 
