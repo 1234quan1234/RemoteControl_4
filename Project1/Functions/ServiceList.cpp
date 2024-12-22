@@ -96,47 +96,93 @@ bool ServiceList::isCriticalService(const wchar_t* serviceName) {
         != CRITICAL_SERVICES.end();
 }
 
-bool ServiceList::startService(const wchar_t* serviceName) {
-    if (isCriticalService(serviceName)) {
-        std::wcout << L"Cannot modify critical service: " << serviceName << std::endl;
-        return false;
+bool ServiceList::startService(const vector<string>& serviceNames, const string& logFileName) {
+    ofstream logFile(logFileName, ios::app);
+    time_t now = time(nullptr);
+    char timeStr[26];
+    ctime_s(timeStr, sizeof(timeStr), &now);
+    logFile << "\n=== Service Start Operation Log " << timeStr << "===\n";
+
+    bool allSuccess = true;
+
+    for (const auto& serviceName : serviceNames) {
+        wstring wServiceName(serviceName.begin(), serviceName.end());
+        logFile << "Attempting to start service: " << serviceName << "\n";
+
+        if (isCriticalService(wServiceName.c_str())) {
+            logFile << "Cannot modify critical service: " << serviceName << "\n";
+            allSuccess = false;
+            continue;
+        }
+
+        SC_HANDLE schService = OpenServiceW(schSCManager, wServiceName.c_str(),
+            SERVICE_START | SERVICE_QUERY_STATUS);
+        if (!schService) {
+            DWORD error = GetLastError();
+            logFile << "Failed to open service. Error code: " << error << "\n";
+            allSuccess = false;
+            continue;
+        }
+
+        if (::StartServiceW(schService, 0, NULL)) {
+            logFile << "Successfully started service: " << serviceName << "\n";
+        }
+        else {
+            DWORD error = GetLastError();
+            logFile << "Failed to start service. Error code: " << error << "\n";
+            allSuccess = false;
+        }
+
+        CloseServiceHandle(schService);
     }
 
-    SC_HANDLE schService = OpenServiceW(schSCManager, serviceName,
-        SERVICE_START | SERVICE_QUERY_STATUS);
-    if (!schService) {
-        std::cout << "Failed to open service. Error: " << GetLastError() << "\n";
-        return false;
-    }
-
-    bool result = ::StartServiceW(schService, 0, NULL);
-    if (!result) {
-        std::cout << "Failed to start service. Error: " << GetLastError() << "\n";
-    }
-
-    CloseServiceHandle(schService);
-    return result;
+    logFile << "=== End of Log ===\n\n";
+    logFile.close();
+    return allSuccess;
 }
 
-bool ServiceList::stopService(const wchar_t* serviceName) {
-    if (isCriticalService(serviceName)) {
-        std::wcout << L"Cannot modify critical service: " << serviceName << std::endl;
-        return false;
+bool ServiceList::stopService(const vector<string>& serviceNames, const string& logFileName) {
+    ofstream logFile(logFileName, ios::app);
+    time_t now = time(nullptr);
+    char timeStr[26];
+    ctime_s(timeStr, sizeof(timeStr), &now);
+    logFile << "\n=== Service Stop Operation Log " << timeStr << "===\n";
+
+    bool allSuccess = true;
+
+    for (const auto& serviceName : serviceNames) {
+        wstring wServiceName(serviceName.begin(), serviceName.end());
+        logFile << "Attempting to stop service: " << serviceName << "\n";
+
+        if (isCriticalService(wServiceName.c_str())) {
+            logFile << "Cannot modify critical service: " << serviceName << "\n";
+            allSuccess = false;
+            continue;
+        }
+
+        SC_HANDLE schService = OpenServiceW(schSCManager, wServiceName.c_str(),
+            SERVICE_STOP | SERVICE_QUERY_STATUS);
+        if (!schService) {
+            DWORD error = GetLastError();
+            logFile << "Failed to open service. Error code: " << error << "\n";
+            allSuccess = false;
+            continue;
+        }
+
+        SERVICE_STATUS status;
+        if (ControlService(schService, SERVICE_CONTROL_STOP, &status)) {
+            logFile << "Successfully stopped service: " << serviceName << "\n";
+        }
+        else {
+            DWORD error = GetLastError();
+            logFile << "Failed to stop service. Error code: " << error << "\n";
+            allSuccess = false;
+        }
+
+        CloseServiceHandle(schService);
     }
 
-    SC_HANDLE schService = OpenServiceW(schSCManager, serviceName,
-        SERVICE_STOP | SERVICE_QUERY_STATUS);
-    if (!schService) {
-        std::cout << "Failed to open service. Error: " << GetLastError() << "\n";
-        return false;
-    }
-
-    SERVICE_STATUS status;
-    bool result = ControlService(schService, SERVICE_CONTROL_STOP, &status);
-    if (!result) {
-        std::cout << "Failed to stop service. Error: " << GetLastError() << "\n";
-    }
-
-    CloseServiceHandle(schService);
-    return result;
+    logFile << "=== End of Log ===\n\n";
+    logFile.close();
+    return allSuccess;
 }

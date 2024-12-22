@@ -155,6 +155,44 @@ string EmailFetcher::createEmailContentMultipleAttachments(
     return content;
 }
 
+bool EmailFetcher::sendEmailWithAttachments(const string& to, const string& subject, const string& body, const vector<string>& attachmentPaths) {
+    if (!tokenManager.hasValidToken()) {
+        tokenManager.refreshToken();
+    }
+
+    // Create vector of path + encoded content pairs
+    vector<pair<string, string>> attachments;
+    for (const auto& path : attachmentPaths) {
+        string attachmentContent;
+        if (!readAttachmentFile(path, attachmentContent)) {
+            return false;
+        }
+        attachments.push_back({ path, base64EncodeContent(attachmentContent) });
+    }
+
+    string emailContent = createEmailContentMultipleAttachments(to, subject, body, attachments);
+    string encodedEmail = base64EncodeContent(emailContent);
+
+    Json::Value requestBody;
+    requestBody["raw"] = encodedEmail;
+
+    vector<string> headers = {
+        "Authorization: Bearer " + tokenManager.getCurrentToken().access_token,
+        "Content-Type: application/json",
+        "Accept: application/json"
+    };
+
+    string response = curl.performRequestWithRetry(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
+        "POST",
+        requestBody.toStyledString(),
+        headers
+    );
+
+    return !response.empty();
+}
+
+
 bool EmailFetcher::sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath) {
     // 1. Token validation
     if (!tokenManager.hasValidToken()) {

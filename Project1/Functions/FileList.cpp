@@ -38,40 +38,54 @@ bool FileList::writeFilesToFile(const std::string& filename) {
     std::ofstream outFile(filename);
     if (!outFile.is_open()) return false;
 
-    // Get list of common directories
-    std::vector<std::wstring> directories = {
-        GetDocumentsPath(),
-        GetDownloadsPath(),
-        GetDesktopPath(),
-        GetAppDataPath(),
-        GetProgramFilesPath()
+    // Set fixed width for columns
+    const int nameWidth = 30;
+    const int pathWidth = 50;
+    const int sizeWidth = 15;
+
+    // Write table header
+    outFile << std::left
+        << std::setw(nameWidth) << "File Name" << " | "
+        << std::setw(pathWidth) << "Directory" << " | "
+        << std::setw(sizeWidth) << "Size (MB)" << std::endl;
+    outFile << std::string(nameWidth + pathWidth + sizeWidth + 6, '-') << std::endl;
+
+    // Define directories with labels
+    struct DirInfo {
+        std::wstring path;
+        std::string label;
     };
 
-    // Scan and write info for each directory
-    for (const auto& dir : directories) {
+    std::vector<DirInfo> directories = {
+        {GetDocumentsPath(), "Documents"},
+        {GetDownloadsPath(), "Downloads"},
+        {GetDesktopPath(), "Desktop"},
+        {GetAppDataPath(), "AppData"},
+        {GetProgramFilesPath(), "Program Files"}
+    };
+
+    // Scan each directory
+    for (const auto& dirInfo : directories) {
         WIN32_FIND_DATAW findData;
-        HANDLE hFind = FindFirstFileW((dir + L"\\*").c_str(), &findData);
+        HANDLE hFind = FindFirstFileW((dirInfo.path + L"\\*").c_str(), &findData);
 
         if (hFind != INVALID_HANDLE_VALUE) {
             do {
                 if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                    // Get file size
                     LARGE_INTEGER fileSize;
                     fileSize.LowPart = findData.nFileSizeLow;
                     fileSize.HighPart = findData.nFileSizeHigh;
                     double sizeMB = fileSize.QuadPart / (1024.0 * 1024.0);
 
-                    // Convert wstring to string for output
                     std::wstring wFileName = findData.cFileName;
                     std::string fileName(wFileName.begin(), wFileName.end());
-                    std::wstring wDirPath = dir;
-                    std::string dirPath(wDirPath.begin(), wDirPath.end());
+                    std::wstring wDirPath = dirInfo.path + L"\\" + findData.cFileName;
+                    std::string fullPath(wDirPath.begin(), wDirPath.end());
 
-                    // Write formatted output
-                    outFile << "File name: " << fileName << std::endl;
-                    outFile << "Directory: " << dirPath << std::endl;
-                    outFile << "Size: " << std::fixed << std::setprecision(2) << sizeMB << " MB" << std::endl;
-                    outFile << "----------------------------------------" << std::endl;
+                    outFile << std::left
+                        << std::setw(nameWidth) << fileName << " | "
+                        << std::setw(pathWidth) << (dirInfo.label + ": " + fullPath) << " | "
+                        << std::setw(sizeWidth) << std::fixed << std::setprecision(2) << sizeMB << std::endl;
                 }
             } while (FindNextFileW(hFind, &findData));
             FindClose(hFind);
