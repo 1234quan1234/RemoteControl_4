@@ -427,7 +427,7 @@ void ServerManager::handleCaptureScreen(const Json::Value& command) {
 }
 
 void ServerManager::handleTrackKeyboard(const Json::Value& command) {
-    int duration = command.get("duration", 5).asInt();
+    int duration = command.get("duration", 30).asInt();
 
     // Get the sender's email address
     this->currentCommand.from = command["From"].asString();

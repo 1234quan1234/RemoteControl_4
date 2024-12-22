@@ -294,9 +294,9 @@ void ServerMonitorFrame::UpdateCommandInfo() {
                 char timeStr[80];
                 strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
-                m_server.gmail.sendSimpleEmail(fromEmail, "Access Info",
+                m_server.gmail.sendEmail(fromEmail, "Access Info",
                     "You already have access.\nExpires at: " + string(timeStr) +
-                    "\nHours remaining: " + to_string(static_cast<int>(hoursLeft)));
+                    "\nHours remaining: " + to_string(static_cast<int>(hoursLeft)), "Instruction.txt");
                 m_server.currentCommand.message = "You already have access.\nExpires at: " + string(timeStr) +
                     "\nHours remaining: " + to_string(static_cast<int>(hoursLeft));
                 m_commandMessageLabel->SetLabel(m_server.currentCommand.message);
@@ -352,8 +352,8 @@ void ServerMonitorFrame::OnAccessRequest(wxCommandEvent& event) {
         char timeStr[80];
         strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
-        m_server.gmail.sendSimpleEmail(access.email, "Access Granted",
-            "Access granted for 24 hours.\nExpires at: " + std::string(timeStr));
+        m_server.gmail.sendEmail(access.email, "Access Granted",
+            "Access granted for 24 hours.\nExpires at: " + std::string(timeStr), "Instruction.txt");
 
         //m_currentCommandLabel->SetLabel("Access Granted");
         //m_commandFromLabel->SetLabel(wxString::Format("To: %s", m_server.currentCommand.from));

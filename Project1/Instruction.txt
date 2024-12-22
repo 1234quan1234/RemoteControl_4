@@ -1,0 +1,142 @@
+## Instructions for Using the Remote Control Program via Gmail
+Course:Computer Network==23TNT1==Group 19
+
+This program allows you to control your computer remotely by sending specific commands via email. The program monitors a designated Gmail account for incoming emails with a specific format and executes the corresponding actions.
+
+**Key Concepts:**
+
+*   **Email Subject is the Command:**  You send commands in the **Subject** line of your email.
+*   **Command Prefix:** All commands **must** start with `Command::`.
+*   **Approved Senders:** You need to get your email address **approved** before you can use most commands. Send a `requestAccess` command to initiate this.
+
+---
+
+**1. General Command Format:**
+
+All commands must be sent as the **Subject** of the email. Use this format:
+
+Command::[COMMAND_NAME] [optional parameters]
+
+*   **`Command::`**:  **(Mandatory)** This tells the program it's a command.
+*   **`[COMMAND_NAME]`**: The specific action you want to perform (see list below).
+*   **`[optional parameters]`**:  Extra information needed for some commands (separated by spaces).
+
+---
+
+**2. Email Sender:**
+
+*   Send commands from an **approved** email address.
+*   To get approved, send the `requestAccess` command.
+
+---
+
+**3. Available Commands and Syntax:**
+
+Here's a list of commands. Use the exact syntax shown for the **Subject** line.
+
+*   **`requestAccess`**: Request permission to control the server.
+    *   **Subject:** `Command::requestAccess`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:**  Sends a request to the server administrator. You'll get an email if you're approved.
+
+*   **`listProcess`**: Get a list of currently running programs.
+    *   **Subject:** `Command::listProcess`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:**  Sends you an email with a `.txt` attachment listing the running processes.
+
+*   **`startProcess`**: Start one or more programs (using shortcut names).
+    *   **Subject:** `Command::startProcess`
+    *   **Content:**  Space-separated list of program shortcut names (e.g., `Chrome Notepad`).
+    *   **Action:** Attempts to start the specified programs. Sends a log file as an attachment.
+
+*   **`endProcess`**: Terminate one or more running programs (using executable names). **USE WITH CAUTION!**
+    *   **Subject:** `Command::endProcess`
+    *   **Content:** Space-separated list of program executable names (e.g., `chrome.exe notepad.exe`).
+    *   **Action:** Attempts to terminate the specified processes. Sends a log file as an attachment.
+
+*   **`readRecentEmails`**: See the content of recent emails received by the server.
+    *   **Subject:** `Command::readRecentEmails`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:** Sends you an email with a `.txt` attachment containing the recent emails.
+
+*   **`captureScreen`**: Take a screenshot of the desktop.
+    *   **Subject:** `Command::captureScreen`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:** Sends you an email with a `.jpg` attachment of the screenshot.
+
+*   **`captureWebcam`**: Capture an image from the webcam.
+    *   **Subject:** `Command::captureWebcam`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:** Sends you an email with a `.jpg` attachment of the webcam capture.
+
+*   **`trackKeyboard`**: Record keyboard activity for a set time.
+    *   **Subject:** `Command::trackKeyboard`
+    *   **Content:**  The duration in seconds (e.g., `60`). Defaults to 5 seconds if left blank.
+    *   **Action:** Records keystrokes and sends a `.txt` log file as an attachment.
+
+*   **`listService`**: Get a list of installed services and their status.
+    *   **Subject:** `Command::listService`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:** Sends you an email with a `.txt` attachment listing the services.
+
+*   **`startService`**: Start one or more services (using exact service names).
+    *   **Subject:** `Command::startService`
+    *   **Content:** Space-separated list of service names (e.g., `RemoteRegistry WinRM`).
+    *   **Action:** Attempts to start the specified services. Sends a log file as an attachment.
+
+*   **`endService`**: Stop one or more services. **USE WITH EXTREME CAUTION!**
+    *   **Subject:** `Command::endService`
+    *   **Content:** Space-separated list of service names (e.g., `Spooler wuauserv`).
+    *   **Action:** Attempts to stop the specified services. Sends a log file as an attachment.
+
+*   **`listFile`**: Get a list of files and folders (current location might be pre-defined).
+    *   **Subject:** `Command::listFile`
+    *   **Content:** (Leave the email body empty)
+    *   **Action:** Sends you an email with a `.txt` attachment listing files and folders.
+
+*   **`sendFile`**: Send one or more files from the server to your email.
+    *   **Subject:** `Command::sendFile`
+    *   **Content:** Space-separated list of **full file paths** (e.g., `D:\Documents\important.txt C:\Users\Public\image.jpg`).
+    *   **Action:** Attempts to send the specified files as email attachments.
+
+*   **Power Commands (Handle with Care!):**
+
+    *   **`Shutdown`**: Shut down the computer.
+        *   **Subject:** `Command::Shutdown`
+        *   **Content:** (Leave the email body empty)
+        *   **Action:** Initiates a system shutdown.
+
+    *   **`Restart`**: Restart the computer.
+        *   **Subject:** `Command::Restart`
+        *   **Content:** (Leave the email body empty)
+        *   **Action:** Initiates a system restart.
+
+    *   **`Sleep`**: Put the computer to sleep.
+        *   **Subject:** `Command::Sleep`
+        *   **Content:** (Leave the email body empty)
+        *   **Action:** Puts the computer into sleep mode.
+
+    *   **`Lock`**: Lock the computer screen.
+        *   **Subject:** `Command::Lock`
+        *   **Content:** (Leave the email body empty)
+        *   **Action:** Locks the current user session.
+
+    *   **`Hibernate`**: Put the computer into hibernation.
+        *   **Subject:** `Command::Hibernate`
+        *   **Content:** (Leave the email body empty)
+        *   **Action:** Puts the computer into hibernation mode.
+
+---
+
+**4. Important Notes:**
+
+*   **Case Sensitivity:** Command names are **case-sensitive**. Type them exactly as shown.
+*   **Get Approved First!**  You **must** send `requestAccess` and be approved before using other control commands.
+*   **Check Email for Responses:** The server will often send emails back with results or error messages.
+*   **Be Careful with Power and Terminate Commands!** These can have immediate and potentially disruptive effects.
+*   **Full File Paths for `sendFile`:** When sending files, provide the **complete and correct path** to each file.
+
+By understanding these instructions, you can effectively control your server remotely using email commands. Remember to start by requesting access!
+
+
+****Use code with caution.****
