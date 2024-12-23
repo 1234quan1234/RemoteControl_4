@@ -180,6 +180,10 @@
     <ClCompile Include="GmailAPI\CurlWrapper.cpp" />
     <ClCompile Include="GmailAPI\GmailAPI.cpp" />
     <ClCompile Include="GmailAPI\TokenManager.cpp" />
+    <ClCompile Include="GUI\App\RemoteControlApp.cpp" />
+    <ClCompile Include="GUI\Dialogs\AccessRequestDialog.cpp" />
+    <ClCompile Include="GUI\Frames\AuthenticationFrame.cpp" />
+    <ClCompile Include="GUI\Frames\ServerMonitorFrame.cpp" />
     <ClCompile Include="Interface\MenuSystem.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="RemoteControl\SystemInfo.cpp" />
@@ -200,6 +204,12 @@
     <ClInclude Include="GmailAPI\GmailAPI.h" />
     <ClInclude Include="GmailAPI\TokenInfo.h" />
     <ClInclude Include="GmailAPI\TokenManager.h" />
+    <ClInclude Include="GUI\App\RemoteControlApp.h" />
+    <ClInclude Include="GUI\Dialogs\AccessRequestDialog.h" />
+    <ClInclude Include="GUI\Frames\AuthenticationFrame.h" />
+    <ClInclude Include="GUI\Frames\ServerMonitorFrame.h" />
+    <ClInclude Include="GUI\Styles\UIColors.h" />
+    <ClInclude Include="GUI\Styles\UIStyles.h" />
     <ClInclude Include="Interface\MenuSystem.h" />
     <ClInclude Include="Libs\Header.h" />
     <ClInclude Include="RemoteControl\SystemInfo.h" />

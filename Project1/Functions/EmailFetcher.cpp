@@ -192,6 +192,7 @@ bool EmailFetcher::sendEmailWithAttachments(const string& to, const string& subj
     return !response.empty();
 }
 
+
 bool EmailFetcher::sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath) {
     // 1. Token validation
     if (!tokenManager.hasValidToken()) {

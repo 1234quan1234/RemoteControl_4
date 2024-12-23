@@ -5,6 +5,10 @@
 #include "..\GmailAPI\TokenManager.h"
 #include "..\Functions\EmailFetcher.h"
 
+#include <WinSock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
 class GmailAPI {
 private:
     CurlWrapper* curl;
@@ -14,6 +18,9 @@ private:
     string scope;
 
     void refreshToken();
+
+    static const int LOCAL_PORT = 8080;
+    std::string waitForAuthCode();
 
 public:
     GmailAPI(const std::string& client_id="", const std::string& client_secret="", const std::string& redirect_uri="");
@@ -29,4 +36,6 @@ public:
     bool sendEmail(const string& to, const string& subject, const string& body, const string& attachmentPath);
 	bool sendSimpleEmail(const string& to, const string& subject, const string& body);
 	string getServerName();
+
+    bool authenticateAutomatically();
 };

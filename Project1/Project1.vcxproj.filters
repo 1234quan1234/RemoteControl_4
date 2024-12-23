@@ -18,6 +18,10 @@
     <ClCompile Include="Functions\FileList.cpp" />
     <ClCompile Include="Functions\Power.cpp" />
     <ClCompile Include="Functions\ServiceList.cpp" />
+    <ClCompile Include="GUI\App\RemoteControlApp.cpp" />
+    <ClCompile Include="GUI\Dialogs\AccessRequestDialog.cpp" />
+    <ClCompile Include="GUI\Frames\AuthenticationFrame.cpp" />
+    <ClCompile Include="GUI\Frames\ServerMonitorFrame.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -83,6 +87,12 @@
     <ClInclude Include="Server\Config.h" />
     <ClInclude Include="Server\EmailMonitor.h" />
     <ClInclude Include="Server\ServerManager.h" />
+    <ClInclude Include="GUI\App\RemoteControlApp.h" />
+    <ClInclude Include="GUI\Dialogs\AccessRequestDialog.h" />
+    <ClInclude Include="GUI\Frames\AuthenticationFrame.h" />
+    <ClInclude Include="GUI\Frames\ServerMonitorFrame.h" />
+    <ClInclude Include="GUI\Styles\UIColors.h" />
+    <ClInclude Include="GUI\Styles\UIStyles.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\ClientSecrets.json" />

@@ -12,7 +12,7 @@
 #pragma comment(lib, "mfreadwrite.lib")
 #pragma comment(lib, "mfuuid.lib")
 #pragma comment(lib, "Shlwapi.lib")
-#pragma comment(lib, "PowrProf.lib")  
+#pragma comment(lib, "PowrProf.lib")
 #pragma comment(lib, "Shcore.lib")
 
 #define CURL_STATICLIB
@@ -76,7 +76,6 @@ using namespace std;
 #include <mfreadwrite.h>
 #include <shlwapi.h>
 
-#include <filesystem>
 
 #include <winsvc.h>
 
