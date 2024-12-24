@@ -48,7 +48,7 @@ public:
 	void handleCaptureScreen(const Json::Value& command);
 
     void handleCaptureWebcam(const Json::Value& command);
-
+    
 	void handleTrackKeyboard(const Json::Value& command);
 
 	void handleListService(const Json::Value& command);
@@ -57,6 +57,7 @@ public:
 
 	void handleListFile(const Json::Value& command);
 	void handleSendFile(const Json::Value& command);
+	void handleDeleteFile(const Json::Value& command);
 
     void handlePowerCommand(const Json::Value& command);
 

@@ -1,7 +1,137 @@
 #include "ServiceList.h"
 
 ServiceList::ServiceList() {
-    schSCManager = OpenSCManager(NULL, NULL, SC_MANAGER_ENUMERATE_SERVICE);
+    // Use checkAdminRights() instead of inline check
+    if (!checkAdminRights()) {
+        DWORD error = GetLastError();
+        wchar_t msg[256];
+        wchar_t errorMsg[256];
+
+        FormatMessageW(
+            FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL,
+            error,
+            0,
+            errorMsg,
+            256,
+            NULL
+        );
+
+        swprintf_s(msg, L"Application must run as administrator.\nError Code: %lu\nDescription: %s",
+            error, errorMsg);
+        MessageBoxW(NULL, msg, L"Admin Rights Required", MB_ICONERROR);
+        return;
+    }
+
+    // Use elevatePrivileges() to get required access
+    if (!elevatePrivileges()) {
+        DWORD error = GetLastError();
+        wchar_t msg[256];
+        wchar_t errorMsg[256];
+
+        FormatMessageW(
+            FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL,
+            error,
+            0,
+            errorMsg,
+            256,
+            NULL
+        );
+
+        swprintf_s(msg, L"Failed to obtain required privileges.\nError Code: %lu\nDescription: %s",
+            error, errorMsg);
+        MessageBoxW(NULL, msg, L"Privilege Error", MB_ICONERROR);
+        return;
+    }
+
+    // Try to open SCManager with retry
+    for (int i = 0; i < 3; i++) {
+        schSCManager = OpenSCManager(NULL, NULL, SC_MANAGER_ALL_ACCESS);
+        if (schSCManager) break;
+        Sleep(1000);
+    }
+
+    if (!schSCManager) {
+        DWORD error = GetLastError();
+        wchar_t msg[256];
+        wchar_t errorMsg[256];
+
+        FormatMessageW(
+            FORMAT_MESSAGE_FROM_SYSTEM,
+            NULL,
+            error,
+            0,
+            errorMsg,
+            256,
+            NULL
+        );
+
+        swprintf_s(msg, L"Failed to open Service Control Manager.\nError Code: %lu\nDescription: %s",
+            error, errorMsg);
+        MessageBoxW(NULL, msg, L"Error", MB_ICONERROR);
+    }
+}
+bool ServiceList::checkAdminRights() {
+    BOOL isAdmin = FALSE;
+    PSID adminGroup;
+    SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
+
+    if (AllocateAndInitializeSid(&ntAuthority, 2,
+        SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
+        0, 0, 0, 0, 0, 0, &adminGroup)) {
+
+        if (!CheckTokenMembership(NULL, adminGroup, &isAdmin)) {
+            DWORD error = GetLastError();
+            FreeSid(adminGroup);
+            SetLastError(error);  // Preserve the actual error
+            return false;
+        }
+
+        FreeSid(adminGroup);
+        if (!isAdmin) {
+            SetLastError(ERROR_ACCESS_DENIED);  // Set meaningful error
+            return false;
+        }
+        return true;
+    }
+
+    // If we get here, something went wrong with SID initialization
+    SetLastError(ERROR_INVALID_PARAMETER);
+    return false;
+}
+
+bool ServiceList::elevatePrivileges() {
+    HANDLE hToken;
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+        return false;
+    }
+
+    const LPCTSTR privileges[] = {
+        SE_SECURITY_NAME,
+        SE_SHUTDOWN_NAME,
+        SE_TCB_NAME,
+        SE_RESTORE_NAME
+    };
+
+    bool success = true;
+    for (const auto& privilege : privileges) {
+        LUID luid;
+        TOKEN_PRIVILEGES tp;
+
+        if (LookupPrivilegeValue(NULL, privilege, &luid)) {
+            tp.PrivilegeCount = 1;
+            tp.Privileges[0].Luid = luid;
+            tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+            if (!AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(TOKEN_PRIVILEGES), NULL, NULL)) {
+                success = false;
+            }
+        }
+    }
+
+    CloseHandle(hToken);
+    return success;
 }
 
 ServiceList::~ServiceList() {

@@ -18,37 +18,31 @@ string GmailAPI::getServerName() {
 }
 
 Json::Value GmailAPI::ReadClientSecrets(const string& path) {
+    cout << "Attempting to open: " << path << endl;
 
-    // Mother folder directory
-    char buffer[100];
-
-    // Buffer to string
-    std::string fix_path(buffer);
-
-    fix_path = path;
-    cout << "Attempting to open: " << fix_path << endl;
-
-    ifstream file(fix_path);
+    // Open file directly using the provided path
+    ifstream file(path);
     if (!file.is_open()) {
-        throw runtime_error("Cannot open client secrets file: " + fix_path);
+        throw runtime_error("Cannot open client secrets file: " + path);
     }
-    cout << "Reading client secrets from: " << fix_path << endl;
 
     Json::Value root;
     Json::CharReaderBuilder reader;
     string errors;
 
+    // Parse JSON from file
     if (!Json::parseFromStream(reader, file, &root, &errors)) {
         throw runtime_error("Failed to parse client secrets: " + errors);
     }
 
+    // Validate required fields
     if (!root.isMember("installed") ||
         !root["installed"].isMember("client_id") ||
         !root["installed"].isMember("client_secret") ||
         !root["installed"].isMember("redirect_uris")) {
         throw runtime_error("Invalid client secrets format");
     }
-    
+
     return root;
 }
 

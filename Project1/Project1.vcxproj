@@ -73,8 +73,14 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <EnableUAC>true</EnableUAC>
+    <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>C:\vcpkg\packages\curl_x64-windows\include;C:\vcpkg\packages\openssl_x64-windows\include;C:\vcpkg\packages\zlib_x64-windows\include;$(IncludePath)</IncludePath>
+    <EnableUAC>true</EnableUAC>
+    <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
@@ -84,6 +90,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath)</IncludePath>
+    <EnableUAC>true</EnableUAC>
+    <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -139,6 +147,7 @@
       <AdditionalLibraryDirectories>$(WXWIN)\lib\vc_x64_lib;C:\openssl-3.3.2\build\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>wxmsw32ud_core.lib;user32.lib;libcrypto.lib;libssl.lib;Normaliz.lib;Ws2_32.lib;Wldap32.lib;Crypt32.lib;advapi32.lib;strmiids.lib;format.lib;ole32.lib;C:\vcpkg\packages\curl_x64-windows\debug\lib\libcurl-d.lib;C:\vcpkg\packages\jsoncpp_x64-windows\debug\lib\jsoncpp.lib;C:\vcpkg\packages\zlib_x64-windows\debug\lib\zlibd.lib</AdditionalDependencies>
       <ForceSymbolReferences>%(ForceSymbolReferences)</ForceSymbolReferences>
+      <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
     </Link>
     <PostBuildEvent>
       <Command>

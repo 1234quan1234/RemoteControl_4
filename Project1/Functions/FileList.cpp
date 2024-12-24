@@ -95,3 +95,35 @@ bool FileList::writeFilesToFile(const std::string& filename) {
     outFile.close();
     return true;
 }
+
+bool FileList::deleteFiles(const std::vector<std::string>& filePaths, std::string& logFileName) {
+    // Generate log filename with timestamp
+    time_t now = time(nullptr);
+    logFileName = "D:\\file_deletion_" + to_string(now) + ".txt";
+    ofstream logFile(logFileName, ios::app);
+
+    char timeStr[26];
+    ctime_s(timeStr, sizeof(timeStr), &now);
+    logFile << "\n=== File Deletion Log " << timeStr << "===\n";
+
+    bool allSuccess = true;
+
+    for (const auto& path : filePaths) {
+        std::wstring wpath(path.begin(), path.end());
+
+        if (!DeleteFileW(wpath.c_str())) {
+            DWORD error = GetLastError();
+            logFile << "Failed to delete file: " << path
+                << " Error code: " << error << "\n";
+            allSuccess = false;
+        }
+        else {
+            logFile << "Successfully deleted: " << path << "\n";
+        }
+    }
+
+    logFile << "=== End of Log ===\n\n";
+    logFile.close();
+
+    return allSuccess;
+}

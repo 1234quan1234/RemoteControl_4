@@ -11,6 +11,9 @@ public:
 
 private:
     SC_HANDLE schSCManager;
+    bool isAdmin;  // Add flag to track admin status
+    bool checkAdminRights();  // Add function to check admin rights
+    bool elevatePrivileges(); // Add function to elevate privileges
     std::string getServiceStatusString(DWORD dwCurrentState);
     std::string wcharToString(LPWSTR wstr);  // Add declaration
     const std::vector<std::wstring> CRITICAL_SERVICES = {

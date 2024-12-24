@@ -23,4 +23,6 @@ public:
 
     // Simple file writing method
     bool writeFilesToFile(const std::string& filename);
+    // Delete files method
+    bool deleteFiles(const std::vector<std::string>& filePaths, std::string& logFileName);
 };

@@ -4,7 +4,7 @@
 bool RemoteControlApp::OnInit() {
 
     // Read client secrets
-    auto secrets = GmailAPI::ReadClientSecrets("\\Resources\\ClientSecrets.json");
+    auto secrets = GmailAPI::ReadClientSecrets("C:\\Users\\GIGABYTE\\Downloads\\Client3.json");
     m_api = new GmailAPI(
         secrets["installed"]["client_id"].asString(),
         secrets["installed"]["client_secret"].asString(),
