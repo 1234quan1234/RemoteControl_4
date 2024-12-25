@@ -10,7 +10,6 @@
     <ClCompile Include="GmailAPI\CurlWrapper.cpp" />
     <ClCompile Include="GmailAPI\GmailAPI.cpp" />
     <ClCompile Include="GmailAPI\TokenManager.cpp" />
-    <ClCompile Include="Interface\MenuSystem.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="RemoteControl\SystemInfo.cpp" />
     <ClCompile Include="Server\EmailMonitor.cpp" />
@@ -81,7 +80,6 @@
     <ClInclude Include="GmailAPI\GmailAPI.h" />
     <ClInclude Include="GmailAPI\TokenInfo.h" />
     <ClInclude Include="GmailAPI\TokenManager.h" />
-    <ClInclude Include="Interface\MenuSystem.h" />
     <ClInclude Include="Libs\Header.h" />
     <ClInclude Include="RemoteControl\SystemInfo.h" />
     <ClInclude Include="Server\Config.h" />

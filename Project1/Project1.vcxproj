@@ -193,7 +193,6 @@
     <ClCompile Include="GUI\Dialogs\AccessRequestDialog.cpp" />
     <ClCompile Include="GUI\Frames\AuthenticationFrame.cpp" />
     <ClCompile Include="GUI\Frames\ServerMonitorFrame.cpp" />
-    <ClCompile Include="Interface\MenuSystem.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="RemoteControl\SystemInfo.cpp" />
     <ClCompile Include="Server\EmailMonitor.cpp" />
@@ -219,7 +218,6 @@
     <ClInclude Include="GUI\Frames\ServerMonitorFrame.h" />
     <ClInclude Include="GUI\Styles\UIColors.h" />
     <ClInclude Include="GUI\Styles\UIStyles.h" />
-    <ClInclude Include="Interface\MenuSystem.h" />
     <ClInclude Include="Libs\Header.h" />
     <ClInclude Include="RemoteControl\SystemInfo.h" />
     <ClInclude Include="Server\Config.h" />
